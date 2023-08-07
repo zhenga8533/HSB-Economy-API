@@ -6,7 +6,7 @@ import io
 from nbtlib import Compound
 
 AUCTION_URL = 'https://api.hypixel.net/skyblock/auctions'
-API_URL = 'https://volcaronitee.pythonanywhere.com'
+API_URL = 'https://volcaronitee.pythonanywhere.com/auction'
 items = {}
 
 
@@ -22,34 +22,6 @@ def decode_nbt(auction):
     decoded_data = base64.b64decode(encoded_data)
     decompressed_data = gzip.decompress(decoded_data)
     return Compound.parse(io.BytesIO(decompressed_data))
-
-
-def process_attributes(attributes, item_bin, current):
-    """
-    Process the attributes of an item.
-
-    :param attributes: Attributes data of the item
-    :param item_bin: Starting bid of the item
-    :param current: Existing item information (if any)
-    :return: Processed attributes for the item
-    """
-
-    result = {}
-
-    attributes = dict(sorted(attributes.items()))
-    attribute_keys = list(attributes.keys())
-
-    for attribute in attributes:
-        attribute_cost = item_bin / (2 ** (attributes[attribute] - 1))
-        result[attribute] = min(attribute_cost, current.get('attributes', {}).get(attribute, attribute_cost))
-
-    if len(attribute_keys) > 1:
-        attribute_combo = str(attribute_keys)
-        result['attribute_combos'] = {
-            attribute_combo: min(item_bin, result.get('attribute_combos', {}).get(attribute_combo, item_bin))
-        }
-
-    return result
 
 
 def get_auction(page):
@@ -84,6 +56,10 @@ def get_auction(page):
         if item_id == "PET":
             pet_info = json.loads(nbt_object['']['i'][0]['tag']['ExtraAttributes']['petInfo'])
             item_id = f'{pet_info["tier"]}_{pet_info["type"]}'
+        elif item_id == "RUNE":
+            runes = nbt_object['']['i'][0]['tag']['ExtraAttributes']['runes']
+            runeKey, runeValue = next(iter(runes.items()))
+            item_id = f"{runeKey}_{int(runeValue)}"
         current = items.get(item_id)
 
         # Item Cost Handling
@@ -104,7 +80,7 @@ def get_auction(page):
 
             # Get lbin attribute combination if value > X
             if item_bin > 50_000_000 and len(attribute_keys) > 1:
-                attribute_combo = str(attribute_keys)
+                attribute_combo = ' '.join(attribute_keys)
                 item['attribute_combos'] = {} if current is None else current.get('attribute_combos') or {}
                 item['attribute_combos'][attribute_combo] = min(item_bin,
                                                                 item['attribute_combos'].get(attribute_combo, item_bin))
