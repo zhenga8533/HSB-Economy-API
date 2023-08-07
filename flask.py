@@ -10,11 +10,10 @@ def handle_request():
     if request.method == 'POST':
         # Get data from the POST request
         data_json = request.get_json()
-        lbin = data_json.get('lbin', '')
+        items = data_json.get('items', '')
 
         # Store the data with timestamp
-        data_set = {'lbin': lbin, 'last_updated': time.time()}
-        data['data'] = data_set
+        data['data'] = {'last_updated': time.time(), 'items': items}
 
     # Return the stored data as JSON
     return jsonify(data.get('data', {}))
