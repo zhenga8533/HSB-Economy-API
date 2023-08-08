@@ -1,2 +1,2 @@
 # HSB Auction API
- A API hosted on PythonAnywhere that stores accurate data on current Hypixel SkyBlock auction house data.
+ An API hosted on PythonAnywhere that stores accurate economical data (Auction/Bazaar) on Hypixel Skyblock.
