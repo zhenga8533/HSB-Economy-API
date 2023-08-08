@@ -23,6 +23,17 @@ def decode_nbt(auction):
     return Compound.parse(io.BytesIO(decompressed_data))
 
 
+def update_kuudra_piece(item_id, attribute, attribute_cost):
+    KUUDRA_PIECES = {"FERVOR", "AURORA", "TERROR", "CRIMSON", "HOLLOW", "MOLTEN"}
+    item_ids = item_id.split('_')
+
+    if item_ids[0] in KUUDRA_PIECES:
+        armor_piece = items.setdefault(item_ids[1], {"attributes": {}})
+        armor_piece_attributes = armor_piece["attributes"]
+        current_attribute_cost = armor_piece_attributes.get(attribute, attribute_cost)
+        armor_piece_attributes[attribute] = min(attribute_cost, current_attribute_cost)
+
+
 def get_auction(page):
     """
     Fetch auction data and process items lbin data.
@@ -75,7 +86,11 @@ def get_auction(page):
             item['attributes'] = {} if current is None else current.get('attributes') or {}
             for attribute in attributes:
                 attribute_cost = item_bin / (2 ** (attributes[attribute] - 1))
-                item['attributes'][attribute] = min(attribute_cost, item['attributes'].get(attribute, attribute_cost))
+                if attribute_cost <= item['attributes'].get(attribute, attribute_cost):
+                    item['attributes'][attribute] = attribute_cost
+
+                    # Set Kuudra Armor Attributes
+                    update_kuudra_piece(item_id, attribute, attribute_cost)
 
             # Get lbin attribute combination if value > X
             if len(attribute_keys) > 1:
