@@ -79,12 +79,17 @@ def get_auction(page):
         # Attributes Handling
         attributes = extra_attributes.get('attributes')
         if attributes is not None:
+            USEFUL_ATTRIBUTES = {
+                "breeze", "dominance", "fortitude", "life_regeneration", "lifeline", "magic_find", "mana_pool",
+                "mana_regeneration", "vitality", "speed", "veteran", "blazing_fortune", "fishing_experience"
+            }
+
             attributes = dict(sorted(attributes.items()))
-            attribute_keys = list(attributes.keys())
+            attribute_keys = set(attributes.keys()).intersection(USEFUL_ATTRIBUTES)
 
             # Get lbin attributes
             item['attributes'] = {} if current is None else current.get('attributes') or {}
-            for attribute in attributes:
+            for attribute in attribute_keys:
                 attribute_cost = item_bin / (2 ** (attributes[attribute] - 1))
                 if attribute_cost <= item['attributes'].get(attribute, attribute_cost):
                     item['attributes'][attribute] = attribute_cost
