@@ -1,8 +1,8 @@
 import requests as rq
 from dotenv import load_dotenv
 import os
-from auction_api.auction import get_auction
-from auction_api.bazaar import get_bazaar
+from auction import get_auction
+from bazaar import get_bazaar
 
 
 def send_data(url, data, key):

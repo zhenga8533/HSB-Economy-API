@@ -83,9 +83,7 @@ def get_auction(page):
                 "breeze", "dominance", "fortitude", "life_regeneration", "lifeline", "magic_find", "mana_pool",
                 "mana_regeneration", "vitality", "speed", "veteran", "blazing_fortune", "fishing_experience"
             }
-
-            attributes = dict(sorted(attributes.items()))
-            attribute_keys = set(attributes.keys()).intersection(USEFUL_ATTRIBUTES)
+            attribute_keys = sorted(attributes.keys() & USEFUL_ATTRIBUTES)
 
             # Get lbin attributes
             item['attributes'] = {} if current is None else current.get('attributes') or {}
@@ -98,11 +96,12 @@ def get_auction(page):
                     update_kuudra_piece(item_id, attribute, attribute_cost)
 
             # Get lbin attribute combination if value > X
+            item_combos = current.get('attribute_combos', {}) if current and 'attribute_combos' in current else {}
             if len(attribute_keys) > 1:
                 attribute_combo = ' '.join(attribute_keys)
-                item['attribute_combos'] = {} if current is None else current.get('attribute_combos') or {}
-                item['attribute_combos'][attribute_combo] = min(item_bin,
-                                                                item['attribute_combos'].get(attribute_combo, item_bin))
+                item_combos[attribute_combo] = min(item_bin, item_combos.get(attribute_combo, item_bin))
+            if item_combos:
+                item['attribute_combos'] = item_combos
 
         # Set Item
         items[item_id] = item
