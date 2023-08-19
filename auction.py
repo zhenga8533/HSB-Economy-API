@@ -81,14 +81,18 @@ def get_auction(page):
         if attributes is not None:
             USEFUL_ATTRIBUTES = {
                 "breeze", "dominance", "fortitude", "life_regeneration", "lifeline", "magic_find", "mana_pool",
-                "mana_regeneration", "vitality", "speed", "veteran", "blazing_fortune", "fishing_experience"
+                "mana_regeneration", "mending", "speed", "veteran", "blazing_fortune", "fishing_experience"
             }
             attribute_keys = sorted(attributes.keys() & USEFUL_ATTRIBUTES)
 
             # Get lbin attributes
             item['attributes'] = {} if current is None else current.get('attributes') or {}
+            check_combo = True
             for attribute in attribute_keys:
-                attribute_cost = item_bin / (2 ** (attributes[attribute] - 1))
+                tier = attributes[attribute]
+                if tier > 5:
+                    check_combo = False
+                attribute_cost = item_bin / (2 ** (tier - 1))
                 if attribute_cost <= item['attributes'].get(attribute, attribute_cost):
                     item['attributes'][attribute] = attribute_cost
 
@@ -97,7 +101,7 @@ def get_auction(page):
 
             # Get lbin attribute combination if value > X
             item_combos = current.get('attribute_combos', {}) if current and 'attribute_combos' in current else {}
-            if len(attribute_keys) > 1:
+            if check_combo and len(attribute_keys) > 1:
                 attribute_combo = ' '.join(attribute_keys)
                 item_combos[attribute_combo] = min(item_bin, item_combos.get(attribute_combo, item_bin))
             if item_combos:

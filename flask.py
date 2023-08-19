@@ -7,6 +7,7 @@ KEY = "PleaseDontChange"
 auction = {}
 bazaar = {}
 
+
 @app.route('/auction', methods=['GET', 'POST'])
 def handle_auction():
     if request.method == 'POST':
@@ -24,6 +25,7 @@ def handle_auction():
     # Return the stored data as JSON
     return jsonify(auction.get('data', {}))
 
+
 @app.route('/bazaar', methods=['GET', 'POST'])
 def handle_bazaar():
     if request.method == 'POST':
@@ -40,6 +42,7 @@ def handle_bazaar():
 
     # Return the stored data as JSON
     return jsonify(bazaar.get('data', {}))
+
 
 if __name__ == '__main__':
     app.run()
