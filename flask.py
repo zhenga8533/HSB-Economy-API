@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify
 import time
 
 app = Flask(__name__)
-KEY = "PleaseDontChange"
+KEY = "Dentge"
 
 auction = {}
 bazaar = {}
