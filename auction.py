@@ -47,6 +47,12 @@ def get_auction(page):
         print(f"Failed to get data. Status code: {response.status_code}")
         return
 
+    # Useful Variables
+    USEFUL_ATTRIBUTES = {
+        "breeze", "dominance", "fortitude", "life_regeneration", "lifeline", "magic_find", "mana_pool",
+        "mana_regeneration", "mending", "speed", "veteran", "blazing_fortune", "fishing_experience"
+    }
+
     data = response.json()
     print(f'Auction Looping: {page + 1}/{data.get("totalPages")}')
     for auction in data["auctions"]:
@@ -78,16 +84,13 @@ def get_auction(page):
 
         # Attributes Handling
         attributes = extra_attributes.get('attributes')
-        if attributes is not None:
-            USEFUL_ATTRIBUTES = {
-                "breeze", "dominance", "fortitude", "life_regeneration", "lifeline", "magic_find", "mana_pool",
-                "mana_regeneration", "mending", "speed", "veteran", "blazing_fortune", "fishing_experience"
-            }
-            attribute_keys = sorted(attributes.keys() & USEFUL_ATTRIBUTES)
+        item['attributes'] = {} if current is None else current.get('attributes') or {}
 
-            # Get lbin attributes
-            item['attributes'] = {} if current is None else current.get('attributes') or {}
+        if attributes is not None:
+            attribute_keys = sorted(attributes.keys() & USEFUL_ATTRIBUTES)
             check_combo = True
+
+            # Get lbin single attribute
             for attribute in attribute_keys:
                 tier = attributes[attribute]
                 if tier > 5:
@@ -106,6 +109,10 @@ def get_auction(page):
                 item_combos[attribute_combo] = min(item_bin, item_combos.get(attribute_combo, item_bin))
             if item_combos:
                 item['attribute_combos'] = item_combos
+
+        # Delete attribute variable for no attribute items
+        if item['attributes'] == {}:
+            del item['attributes']
 
         # Set Item
         items[item_id] = item
