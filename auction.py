@@ -4,9 +4,11 @@ import base64
 import gzip
 import io
 from nbtlib import Compound
+import pickle
+import time
+from datetime import datetime, timedelta
 
 AUCTION_URL = 'https://api.hypixel.net/skyblock/auctions'
-items = {}
 
 
 def decode_nbt(auction):
@@ -23,7 +25,7 @@ def decode_nbt(auction):
     return Compound.parse(io.BytesIO(decompressed_data))
 
 
-def update_kuudra_piece(item_id, attribute, attribute_cost):
+def update_kuudra_piece(items, item_id, attribute, attribute_cost):
     KUUDRA_PIECES = {"FERVOR", "AURORA", "TERROR", "CRIMSON", "HOLLOW", "MOLTEN"}
     item_ids = item_id.split('_')
 
@@ -34,10 +36,11 @@ def update_kuudra_piece(item_id, attribute, attribute_cost):
         armor_piece_attributes[attribute] = min(attribute_cost, current_attribute_cost)
 
 
-def get_auction(page):
+def get_auction(items, page):
     """
     Fetch auction data and process items lbin data.
 
+    :param items: Item data object
     :param page: Page number of the auction data
     """
 
@@ -100,7 +103,7 @@ def get_auction(page):
                     item['attributes'][attribute] = attribute_cost
 
                     # Set Kuudra Armor Attributes
-                    update_kuudra_piece(item_id, attribute, attribute_cost)
+                    update_kuudra_piece(items, item_id, attribute, attribute_cost)
 
             # Get lbin attribute combination if value > X
             item_combos = current.get('attribute_combos', {}) if current and 'attribute_combos' in current else {}
@@ -118,8 +121,10 @@ def get_auction(page):
         items[item_id] = item
 
     if page + 1 < data['totalPages']:
-        get_auction(page + 1)
-        if page == 0:
-            return items
+        get_auction(items, page + 1)
     else:
         print(f'Auction Loop Complete!')
+
+
+def average_items():
+    pass

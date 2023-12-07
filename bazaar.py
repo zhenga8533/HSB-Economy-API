@@ -1,10 +1,9 @@
 import requests as rq
 
 BAZAAR_URL = 'https://api.hypixel.net/skyblock/bazaar'
-items = {}
 
 
-def get_bazaar():
+def get_bazaar(items):
     """
     Fetch bazaar data and process items buy/sell data.
     """
@@ -24,4 +23,3 @@ def get_bazaar():
         items[product] = [quick_status['sellPrice'], quick_status['buyPrice']]
 
     print('Bazaar Products Loaded!')
-    return items

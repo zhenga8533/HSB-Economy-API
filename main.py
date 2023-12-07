@@ -22,5 +22,12 @@ if __name__ == "__main__":
     load_dotenv()
     KEY = os.getenv('KEY')
 
-    send_data(os.getenv('AUCTION_URL'), {'items': get_auction(0)}, KEY)
-    send_data(os.getenv('BAZAAR_URL'), {'items': get_bazaar()}, KEY)
+    # Get data to send
+    auction = {}
+    get_auction(auction, 0)
+    bazaar = {}
+    get_bazaar(bazaar)
+
+    # Send to API
+    send_data(os.getenv('AUCTION_URL'), {'items': auction}, KEY)
+    send_data(os.getenv('BAZAAR_URL'), {'items': bazaar}, KEY)
