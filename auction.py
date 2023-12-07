@@ -4,9 +4,9 @@ import base64
 import gzip
 import io
 from nbtlib import Compound
+import os
 import pickle
-import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
 AUCTION_URL = 'https://api.hypixel.net/skyblock/auctions'
 
@@ -123,8 +123,59 @@ def get_auction(items, page):
     if page + 1 < data['totalPages']:
         get_auction(items, page + 1)
     else:
-        print(f'Auction Loop Complete!')
+        print('Auction Loop Complete!')
+        manage_items(items)
 
 
-def average_items():
-    pass
+def manage_items(items):
+    print('Updating Auction Data!')
+
+    # Check for data directory and files
+    if not os.path.exists('data'):
+        os.makedirs('data')
+    if not os.path.isfile('data/current'):
+        with open('data/current', 'wb') as file:
+            pickle.dump('09/11/2001', file)
+
+    save_items(items)
+
+
+def average_objects(og, avg, count):
+    for key, value in avg.items():
+        if key not in og:
+            og[key] = value
+            continue
+
+        if isinstance(og[key], dict):
+            average_objects(og[key], avg[key], count)
+        else:  # Bias average on current hour
+            og[key] = round(og[key] + (avg[key] - og[key]) / count)
+
+
+def save_items(items):
+    WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    today = WEEKDAYS[datetime.now().weekday()]
+
+    # Load and save current day
+    with open(f'data/current', 'rb') as file:
+        day = pickle.load(file)
+    with open('data/current', 'wb') as file:
+        pickle.dump(today, file)
+
+    # Average out data with higher bias on day/hour
+    if today == day:
+        with open(f'data/{today}', 'rb') as file:
+            data = pickle.load(file)
+        average_objects(items, data, 2)
+
+    # Save new data to current day file
+    with open(f'data/{today}', 'wb') as file:
+        pickle.dump(items, file)
+
+    # Average weekly values
+    count = 1
+    for file_name in os.listdir('data'):
+        if file_name != today and file_name != 'current':
+            count += 1
+            with open(f'data/{file_name}', 'rb') as file:
+                average_objects(items, pickle.load(file), count)
