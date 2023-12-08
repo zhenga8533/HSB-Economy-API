@@ -21,5 +21,4 @@ def get_bazaar(items):
         quick_status = item['quick_status']
 
         items[product] = [quick_status['sellPrice'], quick_status['buyPrice']]
-
-    print('Bazaar Products Loaded!')
+    print('Bazaar Process Complete!')

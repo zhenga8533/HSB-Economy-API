@@ -57,7 +57,7 @@ def get_auction(items, page):
     }
 
     data = response.json()
-    print(f'Auction Looping: {page + 1}/{data.get("totalPages")}')
+    print(f"Auction Looping ({page + 1}/{data['totalPages']})")
     for auction in data["auctions"]:
         if not auction['bin']:
             continue
@@ -123,19 +123,17 @@ def get_auction(items, page):
     if page + 1 < data['totalPages']:
         get_auction(items, page + 1)
     else:
-        print('Auction Loop Complete!')
         manage_items(items)
+        print('Auction Process Complete!')
 
 
 def manage_items(items):
-    print('Updating Auction Data!')
-
     # Check for data directory and files
     if not os.path.exists('data'):
         os.makedirs('data')
-    if not os.path.isfile('data/current'):
-        with open('data/current', 'wb') as file:
-            pickle.dump('09/11/2001', file)
+    if not os.path.isfile('data/current_auction'):
+        with open('data/current_auction', 'wb') as file:
+            pickle.dump(-1, file)
 
     save_items(items)
 
@@ -153,29 +151,28 @@ def average_objects(og, avg, count):
 
 
 def save_items(items):
-    WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-    today = WEEKDAYS[datetime.now().weekday()]
+    today = datetime.now().weekday()
 
     # Load and save current day
-    with open(f'data/current', 'rb') as file:
+    with open(f'data/current_auction', 'rb') as file:
         day = pickle.load(file)
-    with open('data/current', 'wb') as file:
+    with open('data/current_auction', 'wb') as file:
         pickle.dump(today, file)
 
     # Average out data with higher bias on day/hour
     if today == day:
-        with open(f'data/{today}', 'rb') as file:
+        with open(f'data/auction_{today}', 'rb') as file:
             data = pickle.load(file)
         average_objects(items, data, 2)
 
     # Save new data to current day file
-    with open(f'data/{today}', 'wb') as file:
+    with open(f'data/auction_{today}', 'wb') as file:
         pickle.dump(items, file)
 
     # Average weekly values
     count = 1
     for file_name in os.listdir('data'):
-        if file_name != today and file_name != 'current':
+        if file_name != f'auction_{today}' and file_name != 'current_auction':
             count += 1
             with open(f'data/{file_name}', 'rb') as file:
                 average_objects(items, pickle.load(file), count)
