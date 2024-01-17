@@ -34,6 +34,8 @@ def update_kuudra_piece(items, item_id, attribute, attribute_cost):
         armor_piece_attributes = armor_piece["attributes"]
         current_attribute_cost = armor_piece_attributes.get(attribute, attribute_cost)
         armor_piece_attributes[attribute] = min(attribute_cost, current_attribute_cost)
+        return True
+    return False
 
 
 def get_auction(items, page):
@@ -49,12 +51,6 @@ def get_auction(items, page):
     if response.status_code != 200:
         print(f"Failed to get data. Status code: {response.status_code}")
         return
-
-    # Useful Variables
-    USEFUL_ATTRIBUTES = {
-        "breeze", "dominance", "fortitude", "life_regeneration", "lifeline", "magic_find", "mana_pool",
-        "mana_regeneration", "mending", "speed", "veteran", "blazing_fortune", "fishing_experience"
-    }
 
     data = response.json()
     print(f"Auction Looping ({page + 1}/{data['totalPages']})")
@@ -90,8 +86,9 @@ def get_auction(items, page):
         item['attributes'] = {} if current is None else current.get('attributes') or {}
 
         if attributes is not None:
-            attribute_keys = sorted(attributes.keys() & USEFUL_ATTRIBUTES)
+            attribute_keys = sorted(attributes.keys())
             check_combo = True
+            is_kuudra_piece = False
 
             # Get lbin single attribute
             for attribute in attribute_keys:
@@ -102,16 +99,17 @@ def get_auction(items, page):
                 if attribute_cost <= item['attributes'].get(attribute, attribute_cost):
                     item['attributes'][attribute] = attribute_cost
 
-                    # Set Kuudra Armor Attributes
-                    update_kuudra_piece(items, item_id, attribute, attribute_cost)
+                # Set Kuudra Armor Attributes
+                is_kuudra_piece = update_kuudra_piece(items, item_id, attribute, attribute_cost)
 
-            # Get lbin attribute combination if value > X
-            item_combos = current.get('attribute_combos', {}) if current and 'attribute_combos' in current else {}
-            if check_combo and len(attribute_keys) > 1:
-                attribute_combo = ' '.join(attribute_keys)
-                item_combos[attribute_combo] = min(item_bin, item_combos.get(attribute_combo, item_bin))
-            if item_combos:
-                item['attribute_combos'] = item_combos
+            # Get lbin attribute combination if value > X (to check for Kuudra god roll)
+            if is_kuudra_piece:
+                item_combos = current.get('attribute_combos', {}) if current and 'attribute_combos' in current else {}
+                if check_combo and len(attribute_keys) > 1:
+                    attribute_combo = ' '.join(attribute_keys)
+                    item_combos[attribute_combo] = min(item_bin, item_combos.get(attribute_combo, item_bin))
+                if item_combos:
+                    item['attribute_combos'] = item_combos
 
         # Delete attribute variable for no attribute items
         if item['attributes'] == {}:
