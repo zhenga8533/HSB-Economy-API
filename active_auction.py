@@ -8,7 +8,7 @@ import os
 import pickle
 from datetime import datetime
 
-AUCTION_URL = 'https://api.hypixel.net/skyblock/auctions'
+AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions'
 
 
 def decode_nbt(auction):
@@ -127,10 +127,10 @@ def get_auction(items, page):
 
 def manage_items(items):
     # Check for data directory and files
-    if not os.path.exists('data'):
-        os.makedirs('data')
-    if not os.path.isfile('data/current_auction'):
-        with open('data/current_auction', 'wb') as file:
+    if not os.path.exists('data/active'):
+        os.makedirs('data/active')
+    if not os.path.isfile('data/active/auction'):
+        with open('data/active/auction', 'wb') as file:
             pickle.dump(-1, file)
 
     save_items(items)
@@ -152,25 +152,25 @@ def save_items(items):
     today = datetime.now().weekday()
 
     # Load and save current day
-    with open(f'data/current_auction', 'rb') as file:
+    with open(f'data/active/auction', 'rb') as file:
         day = pickle.load(file)
-    with open('data/current_auction', 'wb') as file:
+    with open('data/active/auction', 'wb') as file:
         pickle.dump(today, file)
 
     # Average out data with higher bias on day/hour
     if today == day:
-        with open(f'data/auction_{today}', 'rb') as file:
+        with open(f'data/active/auction_{today}', 'rb') as file:
             data = pickle.load(file)
         average_objects(items, data, 2)
 
     # Save new data to current day file
-    with open(f'data/auction_{today}', 'wb') as file:
+    with open(f'data/active/auction_{today}', 'wb') as file:
         pickle.dump(items, file)
 
     # Average weekly values
     count = 1
-    for file_name in os.listdir('data'):
-        if file_name != f'auction_{today}' and file_name != 'current_auction':
+    for file_name in os.listdir('data/active'):
+        if file_name != f'auction_{today}' and file_name != 'auction':
             count += 1
-            with open(f'data/{file_name}', 'rb') as file:
+            with open(f'data/active/{file_name}', 'rb') as file:
                 average_objects(items, pickle.load(file), count)

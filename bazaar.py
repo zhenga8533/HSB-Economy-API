@@ -1,6 +1,6 @@
 import requests as rq
 
-BAZAAR_URL = 'https://api.hypixel.net/skyblock/bazaar'
+BAZAAR_URL = 'https://api.hypixel.net/v2/skyblock/bazaar'
 
 
 def get_bazaar(items):
