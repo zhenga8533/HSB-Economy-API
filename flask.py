@@ -1,8 +1,11 @@
 from flask import Flask, request, jsonify
 import time
+import os
+from dotenv import load_dotenv
 
 app = Flask(__name__)
-KEY = "Dentge"
+load_dotenv()
+KEY = os.getenv('KEY')
 
 auction = {}
 bazaar = {}

@@ -1,7 +1,7 @@
 import requests as rq
 from dotenv import load_dotenv
 import os
-from auction import get_auction
+from active_auction import get_auction
 from bazaar import get_bazaar
 
 
