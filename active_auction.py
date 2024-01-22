@@ -1,31 +1,14 @@
 import requests as rq
 import json
-import base64
-import gzip
-import io
-from nbtlib import Compound
 import os
 import pickle
 from datetime import datetime
+from auction_api.util.functions import decode_nbt, average_objects
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions'
 
 
-def decode_nbt(auction):
-    """
-    Decode and parse the NBT data from the auction item.
-
-    :param auction: Auction data containing the item information
-    :return: Parsed NBT data as a Compound object
-    """
-
-    encoded_data = auction["item_bytes"]
-    decoded_data = base64.b64decode(encoded_data)
-    decompressed_data = gzip.decompress(decoded_data)
-    return Compound.parse(io.BytesIO(decompressed_data))
-
-
-def update_kuudra_piece(items, item_id, attribute, attribute_cost):
+def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> bool:
     KUUDRA_PIECES = {"FERVOR", "AURORA", "TERROR", "CRIMSON", "HOLLOW", "MOLTEN"}
     item_ids = item_id.split('_')
 
@@ -38,7 +21,7 @@ def update_kuudra_piece(items, item_id, attribute, attribute_cost):
     return False
 
 
-def get_auction(items, page):
+def get_auction(items: dict, page: int) -> None:
     """
     Fetch auction data and process items lbin data.
 
@@ -59,11 +42,7 @@ def get_auction(items, page):
             continue
 
         # Get Item ID
-        # Decode => Decompress => Warp in io.BytesIO to parse the Base64-encoded data
-        encoded_data = auction["item_bytes"]
-        decoded_data = base64.b64decode(encoded_data)
-        decompressed_data = gzip.decompress(decoded_data)
-        nbt_object = Compound.parse(io.BytesIO(decompressed_data))
+        nbt_object = decode_nbt(auction)
         extra_attributes = nbt_object['']['i'][0]['tag']['ExtraAttributes']
 
         # Item ID Handling
@@ -125,7 +104,7 @@ def get_auction(items, page):
         print('Auction Process Complete!')
 
 
-def manage_items(items):
+def manage_items(items: dict) -> None:
     # Check for data directory and files
     if not os.path.exists('data/active'):
         os.makedirs('data/active')
@@ -136,19 +115,7 @@ def manage_items(items):
     save_items(items)
 
 
-def average_objects(og, avg, count):
-    for key, value in avg.items():
-        if key not in og:
-            og[key] = value
-            continue
-
-        if isinstance(og[key], dict):
-            average_objects(og[key], avg[key], count)
-        else:  # Bias average on current hour
-            og[key] = round(og[key] + (avg[key] - og[key]) / count)
-
-
-def save_items(items):
+def save_items(items: dict) -> None:
     today = datetime.now().weekday()
 
     # Load and save current day

@@ -3,7 +3,7 @@ import requests as rq
 BAZAAR_URL = 'https://api.hypixel.net/v2/skyblock/bazaar'
 
 
-def get_bazaar(items):
+def get_bazaar(items: dict) -> None:
     """
     Fetch bazaar data and process items buy/sell data.
     """
@@ -12,7 +12,7 @@ def get_bazaar(items):
 
     if response.status_code != 200:
         print(f"Failed to get data. Status code: {response.status_code}")
-        return {}
+        return
 
     data = response.json()
     products = data['products']

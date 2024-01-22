@@ -5,7 +5,7 @@ from active_auction import get_auction
 from bazaar import get_bazaar
 
 
-def send_data(url, data, key):
+def send_data(url: str, data: dict, key: str) -> dict:
     """
     Send data to the API via POST request.
 
