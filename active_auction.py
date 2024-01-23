@@ -3,25 +3,12 @@ import json
 import os
 import pickle
 from datetime import datetime
-from auction_api.util.functions import decode_nbt, average_objects
+from auction_api.util.functions import decode_nbt, average_objects, update_kuudra_piece
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions'
 
 
-def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> bool:
-    KUUDRA_PIECES = {"FERVOR", "AURORA", "TERROR", "CRIMSON", "HOLLOW", "MOLTEN"}
-    item_ids = item_id.split('_')
-
-    if item_ids[0] in KUUDRA_PIECES:
-        armor_piece = items.setdefault(item_ids[1], {"attributes": {}})
-        armor_piece_attributes = armor_piece["attributes"]
-        current_attribute_cost = armor_piece_attributes.get(attribute, attribute_cost)
-        armor_piece_attributes[attribute] = min(attribute_cost, current_attribute_cost)
-        return True
-    return False
-
-
-def get_auction(items: dict, page: int) -> None:
+def get_active_auction(items: dict, page: int) -> None:
     """
     Fetch auction data and process items lbin data.
 
@@ -98,7 +85,7 @@ def get_auction(items: dict, page: int) -> None:
         items[item_id] = item
 
     if page + 1 < data['totalPages']:
-        get_auction(items, page + 1)
+        get_active_auction(items, page + 1)
     else:
         manage_items(items)
         print('Auction Process Complete!')

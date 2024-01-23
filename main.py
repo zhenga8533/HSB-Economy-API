@@ -1,7 +1,7 @@
 import requests as rq
 from dotenv import load_dotenv
 import os
-from active_auction import get_auction
+from active_auction import get_active_auction
 from bazaar import get_bazaar
 
 
@@ -24,7 +24,7 @@ if __name__ == "__main__":
 
     # Get data to send
     auction = {}
-    get_auction(auction, 0)
+    get_active_auction(auction, 0)
     bazaar = {}
     get_bazaar(bazaar)
 
