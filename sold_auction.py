@@ -4,7 +4,7 @@ import os
 import pickle
 from datetime import datetime
 from dotenv import load_dotenv
-from auction_api.util.functions import decode_nbt, update_kuudra_piece, average_objects, is_within_percentage
+from auction_api.util.functions import decode_nbt, update_kuudra_piece, is_within_percentage
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions_ended'
 
@@ -45,11 +45,11 @@ def get_sold_auction(items: dict) -> None:
                 'timestamp': timestamp}
 
         # Attributes Handling
-        item_attributes = item['attributes']
         attributes = extra_attributes.get('attributes')
         item['attributes'] = {} if current is None else current.get('attributes') or {}
 
         if attributes is not None:
+            item_attributes = item['attributes']
             attribute_keys = sorted(attributes.keys())
             check_combo = True
             is_kuudra_piece = False
@@ -107,26 +107,74 @@ def save_items(items: dict) -> None:
 
 def parse_items(items: dict) -> None:
     now = datetime.now().timestamp()
-    day_seconds = 86400
+    week_seconds = 604_800
+    keys = list(items.keys())
 
-    # Create a list to store keys for deletion
-    keys_to_delete = []
-
-    # Iterate over a copy of the keys to avoid dictionary size change during iteration
-    for key in items.keys():
+    for key in keys:
         item = items[key]
         current_lbin = item.get('lbin', 0)
 
+        # parse pricing
         if current_lbin > 100_000_000:
             continue
-        elif now - item.get('timestamp', now) > day_seconds:
-            keys_to_delete.append(key)
+        elif now - item.get('timestamp', now) > week_seconds:
+            del items[key]
         elif current_lbin != 0:
             item['lbin'] += 1_000
 
-    # Delete the keys after the iteration is complete
-    for key in keys_to_delete:
-        del items[key]
+        # parse attribute pricing
+        attributes = item.get('attributes', {})
+        attribute_keys = list(attributes.keys())
+        for attribute in attribute_keys:
+            if now - attributes[attribute].get('timestamp', now) > week_seconds:
+                del attributes[attribute]
+            else:
+                attributes[attribute]['lbin'] += 1_000
+
+
+def clean_items(items: dict) -> None:
+    for key in items:
+        item = items[key]
+        if 'timesstamp' in item:
+            del item['timestamp']
+
+        # remove attribute timestamps
+        attributes = item.get('attributes', {})
+        attribute_keys = list(attributes.keys())
+        for attribute in attribute_keys:
+            attribute_lbin = attributes[attribute]['lbin']
+            del attributes[attribute]
+            attributes[attribute] = attribute_lbin
+
+
+def merge_current(items: dict) -> None:
+    """
+    Merges sold auction data with current auction data to override old
+
+    :param items: Sold auction items data.
+    """
+
+    with open(f'data/active/auction', 'rb') as file:
+        data = pickle.load(file)
+        now = datetime.now().timestamp()
+
+        for key in data:
+            if key in items:
+                continue
+
+            items[key] = data[key]
+            items[key]['timestamp'] = now
+
+            # set timestamp of attributes
+            if 'attributes' in items[key]:
+                attributes = items[key]['attributes']
+                new_attributes = {}
+                for attribute in attributes:
+                    new_attributes[attribute] = {}
+                    new_attributes[attribute]['lbin'] = attributes[attribute]
+                    new_attributes[attribute]['timestamp'] = now
+
+                items[key]['attributes'] = new_attributes
 
 
 if __name__ == "__main__":
@@ -137,8 +185,9 @@ if __name__ == "__main__":
     lbin = get_items()
     parse_items(lbin)
     get_sold_auction(lbin)
+    # merge_current(lbin)
     save_items(lbin)
-    print(lbin)
+    clean_items(lbin)
 
     # Send to API
     # send_data(os.getenv('AUCTION_URL'), {'items': auction}, KEY)

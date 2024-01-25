@@ -23,7 +23,7 @@ def get_active_auction(items: dict, page: int) -> None:
         return
 
     data = response.json()
-    print(f"Auction Looping ({page + 1}/{data['totalPages']})")
+    # print(f"Auction Looping ({page + 1}/{data['totalPages']})")
     for auction in data["auctions"]:
         if not auction['bin']:
             continue
@@ -88,15 +88,15 @@ def get_active_auction(items: dict, page: int) -> None:
         get_active_auction(items, page + 1)
     else:
         manage_items(items)
-        print('Auction Process Complete!')
+        # print('Auction Process Complete!')
 
 
 def manage_items(items: dict) -> None:
     # Check for data directory and files
     if not os.path.exists('data/active'):
         os.makedirs('data/active')
-    if not os.path.isfile('data/active/auction'):
-        with open('data/active/auction', 'wb') as file:
+    if not os.path.isfile('data/active/day'):
+        with open('data/active/day', 'wb') as file:
             pickle.dump(-1, file)
 
     save_items(items)
@@ -106,9 +106,9 @@ def save_items(items: dict) -> None:
     today = datetime.now().weekday()
 
     # Load and save current day
-    with open(f'data/active/auction', 'rb') as file:
+    with open(f'data/active/day', 'rb') as file:
         day = pickle.load(file)
-    with open('data/active/auction', 'wb') as file:
+    with open('data/active/day', 'wb') as file:
         pickle.dump(today, file)
 
     # Average out data with higher bias on day/hour
@@ -124,7 +124,11 @@ def save_items(items: dict) -> None:
     # Average weekly values
     count = 1
     for file_name in os.listdir('data/active'):
-        if file_name != f'auction_{today}' and file_name != 'auction':
+        if file_name != f'auction_{today}' and file_name != 'day':
             count += 1
             with open(f'data/active/{file_name}', 'rb') as file:
                 average_objects(items, pickle.load(file), count)
+
+    # Save average to auction file
+    with open(f'data/active/auction', 'wb') as file:
+        pickle.dump(items, file)

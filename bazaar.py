@@ -21,4 +21,4 @@ def get_bazaar(items: dict) -> None:
         quick_status = item['quick_status']
 
         items[product] = [quick_status['sellPrice'], quick_status['buyPrice']]
-    print('Bazaar Process Complete!')
+    # print('Bazaar Process Complete!')
