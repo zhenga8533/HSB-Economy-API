@@ -1,8 +1,22 @@
+import requests as rq
 import base64
 import gzip
 import io
 from nbtlib import Compound
 from datetime import datetime
+
+
+def send_data(url: str, data: dict, key: str) -> dict:
+    """
+    Send data to the API via POST request.
+
+    :param url: URL to POST to
+    :param data: Data to be sent
+    :param key: API key needed to make a POST request
+    :return: API response
+    """
+    response = rq.post(url, json=data, params={'key': key})
+    return response.json()
 
 
 def decode_nbt(auction: dict) -> dict:

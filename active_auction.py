@@ -3,7 +3,7 @@ import json
 import os
 import pickle
 from datetime import datetime
-from auction_api.util.functions import decode_nbt, average_objects, update_kuudra_piece
+from util.functions import decode_nbt, average_objects, update_kuudra_piece
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions'
 

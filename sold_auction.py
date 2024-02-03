@@ -4,7 +4,8 @@ import os
 import pickle
 from datetime import datetime
 from dotenv import load_dotenv
-from auction_api.util.functions import decode_nbt, update_kuudra_piece, is_within_percentage
+from util.items import LIMITED
+from util.functions import decode_nbt, update_kuudra_piece, is_within_percentage, send_data
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions_ended'
 
@@ -154,12 +155,13 @@ def merge_current(items: dict) -> None:
     :param items: Sold auction items data.
     """
 
+    # Merge with current lbin auctions
     with open(f'data/active/auction', 'rb') as file:
         data = pickle.load(file)
         now = datetime.now().timestamp()
 
         for key in data:
-            if key in items:
+            if key in items and items[key].get('lbin', 0) * 5 >= data[key].get('lbin', 0):
                 continue
 
             items[key] = data[key]
@@ -176,6 +178,16 @@ def merge_current(items: dict) -> None:
 
                 items[key]['attributes'] = new_attributes
 
+    # Finally merge with hard coded items
+    for key in LIMITED:
+        if key in items and items[key].get('lbin', 0) * 5 >= LIMITED[key]:
+            continue
+
+        items[key] = {
+            'lbin': LIMITED[key],
+            'timestamp': now
+        }
+
 
 if __name__ == "__main__":
     load_dotenv()
@@ -185,9 +197,9 @@ if __name__ == "__main__":
     lbin = get_items()
     parse_items(lbin)
     get_sold_auction(lbin)
-    # merge_current(lbin)
+    merge_current(lbin)
     save_items(lbin)
     clean_items(lbin)
 
     # Send to API
-    # send_data(os.getenv('AUCTION_URL'), {'items': auction}, KEY)
+    send_data(os.getenv('AUCTION_URL'), {'items': lbin}, KEY)

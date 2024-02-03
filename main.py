@@ -1,24 +1,11 @@
-import requests as rq
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+from util.functions import send_data
 from active_auction import get_active_auction
 from bazaar import get_bazaar
 
 
-def send_data(url: str, data: dict, key: str) -> dict:
-    """
-    Send data to the API via POST request.
-
-    :param url: URL to POST to
-    :param data: Data to be sent
-    :param key: API key needed to make a POST request
-    :return: API response
-    """
-    response = rq.post(url, json=data, params={'key': key})
-    return response.json()
-
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     load_dotenv()
     KEY = os.getenv('KEY')
 
@@ -29,5 +16,4 @@ if __name__ == "__main__":
     get_bazaar(bazaar)
 
     # Send to API
-    send_data(os.getenv('AUCTION_URL'), {'items': auction}, KEY)
     send_data(os.getenv('BAZAAR_URL'), {'items': bazaar}, KEY)
