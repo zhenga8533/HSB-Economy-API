@@ -3,7 +3,7 @@ import json
 import os
 import pickle
 from datetime import datetime
-from util.functions import decode_nbt, average_objects, update_kuudra_piece
+from util.functions import decode_nbt, average_objects
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions'
 
@@ -90,6 +90,30 @@ def get_active_auction(items: dict, page: int) -> None:
     else:
         manage_items(items)
         # print('Auction Process Complete!')
+
+
+def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> bool:
+    """
+    Parses Kuudra item into specific piece data to add to API.
+
+    :param items: Auction items object to be sent to API.
+    :param item_id: Name of item.
+    :param attribute: Name of attribute.
+    :param attribute_cost: Total value of attribute.
+    :return: True if piece is a Kuudra piece otherwise False.
+    """
+    KUUDRA_PIECES = {'FERVOR', 'AURORA', 'TERROR', 'CRIMSON', 'HOLLOW', 'MOLTEN'}
+    item_ids = item_id.split('_')
+
+    if item_ids[0] in KUUDRA_PIECES:
+        armor_piece = items.setdefault(item_ids[1], {'attributes': {}})
+
+        # set individual attribute price
+        attributes = armor_piece['attributes']
+        attributes[attribute] = min(attributes.get(attribute, attribute_cost), attribute_cost)
+
+        return True
+    return False
 
 
 def manage_items(items: dict) -> None:

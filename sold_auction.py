@@ -5,7 +5,7 @@ import pickle
 from datetime import datetime
 from dotenv import load_dotenv
 from util.items import LIMITED
-from util.functions import decode_nbt, update_kuudra_piece, is_within_percentage, send_data
+from util.functions import decode_nbt, is_within_percentage, send_data
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions_ended'
 now = datetime.now().timestamp()
@@ -71,6 +71,7 @@ def get_sold_auction(items: dict) -> None:
                     check_combo = False
                 attribute_cost = item_bin / (2 ** (tier - 1))
                 current_cost = item_attributes[attribute]['lbin'] if attribute in item_attributes else attribute_cost
+
                 if attribute_cost <= current_cost:
                     item_attributes[attribute] = {'lbin': attribute_cost, 'timestamp': now}
                 elif is_within_percentage(current_cost, attribute_cost, 5):
@@ -84,7 +85,8 @@ def get_sold_auction(items: dict) -> None:
                 item_combos = current.get('attribute_combos', {}) if current and 'attribute_combos' in current else {}
                 if check_combo and len(attribute_keys) > 1:
                     attribute_combo = ' '.join(attribute_keys)
-                    current_cost = item_combos.get(attribute_combo, item_bin)
+                    current_cost = item_combos[attribute_combo]['lbin'] if attribute_combo in item_combos else item_bin
+
                     if item_bin <= current_cost:
                         item_combos[attribute_combo] = {'lbin': item_bin, 'timestamp': now}
                     elif is_within_percentage(current_cost, item_bin, 5):
@@ -98,6 +100,36 @@ def get_sold_auction(items: dict) -> None:
 
         # Set Item
         items[item_id] = item
+
+    merge_current(items)
+
+
+def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> bool:
+    """
+    Parses Kuudra item into specific piece data to add to API.
+
+    :param: items - Auction items object to be sent to API.
+    :param: item_id - Name of item.
+    :param: attribute - Name of attribute.
+    :param: attribute_cost - Total value of attribute.
+    :return: True if piece is a Kuudra piece otherwise False.
+    """
+    KUUDRA_PIECES = {'FERVOR', 'AURORA', 'TERROR', 'CRIMSON', 'HOLLOW', 'MOLTEN'}
+    item_ids = item_id.split('_')
+
+    if item_ids[0] in KUUDRA_PIECES:
+        armor_piece = items.setdefault(item_ids[1], {'attributes': {}})
+
+        # set individual attribute price
+        attributes = armor_piece['attributes']
+        current_cost = attributes[attribute]['lbin'] if attribute in attributes else attribute_cost
+        if attribute_cost <= current_cost:
+            attributes[attribute] = {'lbin': attribute_cost, 'timestamp': datetime.now().timestamp()}
+        elif is_within_percentage(current_cost, attribute_cost, 5):
+            attributes[attribute]['timestamp'] = datetime.now().timestamp()
+
+        return True
+    return False
 
 
 def get_items() -> dict:
@@ -118,18 +150,6 @@ def get_items() -> dict:
     # otherwise send current item data
     with open(f'data/sold/auction', 'rb') as file:
         return pickle.load(file)
-
-
-def save_items(items: dict) -> None:
-    """
-    Saves the provided item data to the specified file.
-
-    :param: items - A dictionary containing information about items, where keys are item IDs.
-    :return: None
-    """
-
-    with open(f'data/sold/auction', 'wb') as file:
-        pickle.dump(items, file)
 
 
 def parse_obj(obj: dict, seconds_frame: int) -> None:
@@ -180,6 +200,76 @@ def parse_items(items: dict) -> None:
         parse_obj(item.get('attribute_combos', {}), week_seconds)
 
 
+def timestamp_obj(obj: dict, var: str) -> None:
+    """
+    Timestamps the entries in the specified dictionary under the given variable.
+
+    :param: obj - A dictionary to be processed, where keys are identifiers and values are dictionaries.
+    :param: var - The variable within the dictionary to be timestamped.
+    :return: None
+    """
+
+    if var in obj:
+        keys = obj[var]
+        new_keys = {}
+        for key in keys:
+            new_keys[key] = {
+                'lbin': keys[key],
+                'timestamp': now
+            }
+        obj[var] = new_keys
+
+
+def merge_current(items: dict) -> None:
+    """
+    Merges sold auction data with current auction data to override old
+
+    :param: items - Sold auction items data.
+    :return: None
+    """
+
+    # Merge with current lbin auctions
+    with open(f'data/active/auction', 'rb') as file:
+        data = pickle.load(file)
+
+        for key in data:
+            if key in items and items[key].get('lbin', 0) * 5 >= data[key].get('lbin', 0):
+                continue
+
+            items[key] = data[key]
+            items[key]['timestamp'] = now
+
+            # set timestamp of attributes
+            timestamp_obj(items[key], 'attributes')
+            timestamp_obj(items[key], 'attribute_combos')
+
+    # Finally merge with hard coded items
+    for key in LIMITED:
+        if key in items and items[key].get('lbin', 0) * 5 >= LIMITED[key]:
+            continue
+
+        items[key] = {
+            'lbin': LIMITED[key],
+            'timestamp': now
+        }
+
+    save_items(items)
+
+
+def save_items(items: dict) -> None:
+    """
+    Saves the provided item data to the specified file.
+
+    :param: items - A dictionary containing information about items, where keys are item IDs.
+    :return: None
+    """
+
+    with open(f'data/sold/auction', 'wb') as file:
+        pickle.dump(items, file)
+
+    clean_items(items)
+
+
 def clean_obj(obj: dict) -> None:
     """
     Cleans the provided dictionary by removing entries and preserving their 'lbin' values.
@@ -213,59 +303,16 @@ def clean_items(items: dict) -> None:
         clean_obj(item.get('attributes', {}))
         clean_obj(item.get('attribute_combos', {}))
 
+    send_items(items)
 
-def merge_current(items: dict) -> None:
-    """
-    Merges sold auction data with current auction data to override old
 
-    :param: items - Sold auction items data.
-    :return: None
-    """
-
-    # Merge with current lbin auctions
-    with open(f'data/active/auction', 'rb') as file:
-        data = pickle.load(file)
-
-        for key in data:
-            if key in items and items[key].get('lbin', 0) * 5 >= data[key].get('lbin', 0):
-                continue
-
-            items[key] = data[key]
-            items[key]['timestamp'] = now
-
-            # set timestamp of attributes
-            if 'attributes' in items[key]:
-                attributes = items[key]['attributes']
-                new_attributes = {}
-                for attribute in attributes:
-                    new_attributes[attribute] = {}
-                    new_attributes[attribute]['lbin'] = attributes[attribute]
-                    new_attributes[attribute]['timestamp'] = now
-
-                items[key]['attributes'] = new_attributes
-
-    # Finally merge with hard coded items
-    for key in LIMITED:
-        if key in items and items[key].get('lbin', 0) * 5 >= LIMITED[key]:
-            continue
-
-        items[key] = {
-            'lbin': LIMITED[key],
-            'timestamp': now
-        }
+def send_items(items):
+    load_dotenv()
+    KEY = os.getenv('KEY')
+    send_data(os.getenv('AUCTION_URL'), {'items': lbin}, KEY)
 
 
 if __name__ == "__main__":
-    load_dotenv()
-    KEY = os.getenv('KEY')
-
-    # Get data to send
     lbin = get_items()
     parse_items(lbin)
     get_sold_auction(lbin)
-    merge_current(lbin)
-    save_items(lbin)
-    clean_items(lbin)
-
-    # Send to API
-    send_data(os.getenv('AUCTION_URL'), {'items': lbin}, KEY)
