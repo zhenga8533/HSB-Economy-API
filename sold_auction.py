@@ -8,6 +8,7 @@ from util.items import LIMITED
 from util.functions import decode_nbt, update_kuudra_piece, is_within_percentage, send_data
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions_ended'
+now = datetime.now().timestamp()
 
 
 def get_sold_auction(items: dict) -> None:
@@ -63,9 +64,9 @@ def get_sold_auction(items: dict) -> None:
                 attribute_cost = item_bin / (2 ** (tier - 1))
                 current_cost = item_attributes[attribute]['lbin'] if attribute in item_attributes else attribute_cost
                 if attribute_cost <= current_cost:
-                    item_attributes[attribute] = {'lbin': attribute_cost, 'timestamp': datetime.now().timestamp()}
+                    item_attributes[attribute] = {'lbin': attribute_cost, 'timestamp': now}
                 elif is_within_percentage(current_cost, attribute_cost, 5):
-                    item_attributes[attribute]['timestamp'] = datetime.now().timestamp()
+                    item_attributes[attribute]['timestamp'] = now
 
                 # Set Kuudra Armor Attributes
                 is_kuudra_piece = update_kuudra_piece(items, item_id, attribute, attribute_cost)
@@ -75,7 +76,11 @@ def get_sold_auction(items: dict) -> None:
                 item_combos = current.get('attribute_combos', {}) if current and 'attribute_combos' in current else {}
                 if check_combo and len(attribute_keys) > 1:
                     attribute_combo = ' '.join(attribute_keys)
-                    item_combos[attribute_combo] = min(item_bin, item_combos.get(attribute_combo, item_bin))
+                    current_cost = item_combos.get(attribute_combo, item_bin)
+                    if item_bin <= current_cost:
+                        item_combos[attribute_combo] = {'lbin': item_bin, 'timestamp': now}
+                    elif is_within_percentage(current_cost, item_bin, 5):
+                        item_combos[attribute_combo]['timestamp'] = now
                 if item_combos:
                     item['attribute_combos'] = item_combos
 
@@ -106,8 +111,16 @@ def save_items(items: dict) -> None:
         pickle.dump(items, file)
 
 
+def parse_obj(obj, seconds_frame):
+    keys = list(obj.keys())
+    for key in keys:
+        if now - obj[key].get('timestamp', now) > seconds_frame:
+            del obj[key]
+        else:
+            obj[key]['lbin'] += 1_000
+
+
 def parse_items(items: dict) -> None:
-    now = datetime.now().timestamp()
     week_seconds = 604_800
     keys = list(items.keys())
 
@@ -124,28 +137,27 @@ def parse_items(items: dict) -> None:
             item['lbin'] += 1_000
 
         # parse attribute pricing
-        attributes = item.get('attributes', {})
-        attribute_keys = list(attributes.keys())
-        for attribute in attribute_keys:
-            if now - attributes[attribute].get('timestamp', now) > week_seconds:
-                del attributes[attribute]
-            else:
-                attributes[attribute]['lbin'] += 1_000
+        parse_obj(item.get('attributes', {}), week_seconds)
+        parse_obj(item.get('attribute_combos', {}), week_seconds)
+
+
+def clean_obj(obj: dict) -> None:
+    keys = list(obj.keys())
+    for key in keys:
+        key_lbin = obj[key]['lbin']
+        del obj[key]
+        obj[key] = key_lbin
 
 
 def clean_items(items: dict) -> None:
     for key in items:
         item = items[key]
-        if 'timesstamp' in item:
+        if 'timestamp' in item:
             del item['timestamp']
 
         # remove attribute timestamps
-        attributes = item.get('attributes', {})
-        attribute_keys = list(attributes.keys())
-        for attribute in attribute_keys:
-            attribute_lbin = attributes[attribute]['lbin']
-            del attributes[attribute]
-            attributes[attribute] = attribute_lbin
+        clean_obj(item.get('attributes', {}))
+        clean_obj(item.get('attribute_combos', {}))
 
 
 def merge_current(items: dict) -> None:
@@ -158,7 +170,6 @@ def merge_current(items: dict) -> None:
     # Merge with current lbin auctions
     with open(f'data/active/auction', 'rb') as file:
         data = pickle.load(file)
-        now = datetime.now().timestamp()
 
         for key in data:
             if key in items and items[key].get('lbin', 0) * 5 >= data[key].get('lbin', 0):
