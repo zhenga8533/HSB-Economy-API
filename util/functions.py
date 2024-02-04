@@ -3,18 +3,18 @@ import base64
 import gzip
 import io
 from nbtlib import Compound
-from datetime import datetime
 
 
 def send_data(url: str, data: dict, key: str) -> dict:
     """
     Send data to the API via POST request.
 
-    :param url: URL to POST to
-    :param data: Data to be sent
-    :param key: API key needed to make a POST request
+    :param: url - URL to POST to
+    :param: data - Data to be sent
+    :param: key - API key needed to make a POST request
     :return: API response
     """
+
     response = rq.post(url, json=data, params={'key': key})
     return response.json()
 
@@ -23,7 +23,7 @@ def decode_nbt(auction: dict) -> dict:
     """
     Decode => Decompress => Warp in io.BytesIO to parse the Base64-encoded data
 
-    :param auction: Auction data containing the item information
+    :param: auction - Auction data containing the item information
     :return: Parsed NBT data as a Compound object
     """
 
@@ -37,9 +37,10 @@ def average_objects(og: dict, avg: dict, count: int) -> None:
     """
     Recursively computes the average of values in nested dictionaries.
 
-    :param og: The original dictionary to be averaged.
-    :param avg: The dictionary containing values to be averaged with the original.
-    :param count: The count of elements used for averaging.
+    :param: og - The original dictionary to be averaged.
+    :param: avg - The dictionary containing values to be averaged with the original.
+    :param: count - The count of elements used for averaging.
+    :return: None
     """
     for key, value in avg.items():
         if key not in og:
@@ -56,9 +57,9 @@ def is_within_percentage(number1: float, number2: float, percentage: float) -> b
     """
     Check if number1 is within a certain percentage of number2.
 
-    :param number1: The first number to compare.
-    :param number2: The second number to compare against.
-    :param percentage: The percentage within which to check.
+    :param: number1 - The first number to compare.
+    :param: number2 - The second number to compare against.
+    :param: percentage - The percentage within which to check.
     :return: True if number1 is within the specified percentage of number2, False otherwise.
     """
     threshold = (percentage / 100) * max(abs(number1), abs(number2))

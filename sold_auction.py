@@ -306,10 +306,17 @@ def clean_items(items: dict) -> None:
     send_items(items)
 
 
-def send_items(items):
+def send_items(items: dict) -> None:
+    """
+    Sends the provided 'items' data using an API call.
+
+    :param: items - A dictionary containing lbin information about items.
+    :return: None
+    """
+
     load_dotenv()
     KEY = os.getenv('KEY')
-    send_data(os.getenv('AUCTION_URL'), {'items': lbin}, KEY)
+    send_data(os.getenv('AUCTION_URL'), {'items': items}, KEY)
 
 
 if __name__ == "__main__":
