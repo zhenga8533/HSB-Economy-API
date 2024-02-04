@@ -12,8 +12,9 @@ def get_active_auction(items: dict, page: int) -> None:
     """
     Fetch auction data and process items lbin data.
 
-    :param items: Item data object
-    :param page: Page number of the auction data
+    :param: items - Item data object
+    :param: page - Page number of the auction data
+    :return: None
     """
 
     response = rq.get(AUCTION_URL, params={'page': page})
@@ -92,6 +93,13 @@ def get_active_auction(items: dict, page: int) -> None:
 
 
 def manage_items(items: dict) -> None:
+    """
+    Manages the provided 'items' dictionary, saving it to a file for persistence.
+
+    :param: items - A dictionary containing information about items, where keys are item IDs.
+    :return: None
+    """
+
     # Check for data directory and files
     if not os.path.exists('data/active'):
         os.makedirs('data/active')
@@ -103,6 +111,13 @@ def manage_items(items: dict) -> None:
 
 
 def save_items(items: dict) -> None:
+    """
+    Saves the provided 'items' dictionary to files, managing daily and weekly averages for persistence.
+
+    :param: items - A dictionary containing information about items, where keys are item IDs.
+    :return: None
+    """
+
     today = datetime.now().weekday()
 
     # Load and save current day

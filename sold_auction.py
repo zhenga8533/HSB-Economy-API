@@ -12,6 +12,14 @@ now = datetime.now().timestamp()
 
 
 def get_sold_auction(items: dict) -> None:
+    """
+    Fetches data from the specified AUCTION_URL, processes and updates the provided 'items' dictionary
+    with information about sold auctions.
+
+    :param: items - A dictionary containing information about items, where keys are item IDs.
+    :return: None
+    """
+
     response = rq.get(AUCTION_URL)
 
     if response.status_code != 200:
@@ -93,6 +101,12 @@ def get_sold_auction(items: dict) -> None:
 
 
 def get_items() -> dict:
+    """
+    Retrieves item data from the stored file or returns an empty dictionary if no data is available.
+
+    :return: A dictionary containing information about items, where keys are item IDs.
+    """
+
     # Check for data directory and files
     if not os.path.exists('data/sold'):
         os.makedirs('data/sold')
@@ -107,11 +121,28 @@ def get_items() -> dict:
 
 
 def save_items(items: dict) -> None:
+    """
+    Saves the provided item data to the specified file.
+
+    :param: items - A dictionary containing information about items, where keys are item IDs.
+    :return: None
+    """
+
     with open(f'data/sold/auction', 'wb') as file:
         pickle.dump(items, file)
 
 
-def parse_obj(obj, seconds_frame):
+def parse_obj(obj: dict, seconds_frame: int) -> None:
+    """
+    Updates the provided dictionary by removing entries with timestamps older than 'seconds_frame'
+    and incrementing the 'lbin' value for remaining entries.
+
+    :param: obj - A dictionary to be processed, where keys are identifiers and values are dictionaries
+                containing 'timestamp' and 'lbin'.
+    :param: seconds_frame - The time frame in seconds. Entries older than this duration will be removed.
+    :return: None
+    """
+
     keys = list(obj.keys())
     for key in keys:
         if now - obj[key].get('timestamp', now) > seconds_frame:
@@ -121,6 +152,14 @@ def parse_obj(obj, seconds_frame):
 
 
 def parse_items(items: dict) -> None:
+    """
+    Parses and updates the provided 'items' dictionary, removing entries with outdated timestamps,
+    incrementing 'lbin' values, and applying similar updates to attribute and attribute_combos dictionaries.
+
+    :param: items - A dictionary containing information about items, where keys are item IDs.
+    :return: None
+    """
+
     week_seconds = 604_800
     keys = list(items.keys())
 
@@ -142,6 +181,14 @@ def parse_items(items: dict) -> None:
 
 
 def clean_obj(obj: dict) -> None:
+    """
+    Cleans the provided dictionary by removing entries and preserving their 'lbin' values.
+
+    :param: obj - A dictionary to be cleaned, where keys are identifiers and values are dictionaries
+                containing 'lbin'.
+    :return: None
+    """
+
     keys = list(obj.keys())
     for key in keys:
         key_lbin = obj[key]['lbin']
@@ -150,6 +197,13 @@ def clean_obj(obj: dict) -> None:
 
 
 def clean_items(items: dict) -> None:
+    """
+    Cleans the provided 'items' dictionary by removing 'timestamp' entries and cleaning attribute dictionaries.
+
+    :param: items - A dictionary containing information about items, where keys are item IDs.
+    :return: None
+    """
+
     for key in items:
         item = items[key]
         if 'timestamp' in item:
@@ -164,7 +218,8 @@ def merge_current(items: dict) -> None:
     """
     Merges sold auction data with current auction data to override old
 
-    :param items: Sold auction items data.
+    :param: items - Sold auction items data.
+    :return: None
     """
 
     # Merge with current lbin auctions

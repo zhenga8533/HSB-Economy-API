@@ -5,7 +5,10 @@ BAZAAR_URL = 'https://api.hypixel.net/v2/skyblock/bazaar'
 
 def get_bazaar(items: dict) -> None:
     """
-    Fetch bazaar data and process items buy/sell data.
+    Fetches data from the specified BAZAAR_URL and updates the provided 'items' dictionary with bazaar information.
+
+    :param: items - A dictionary containing information about items, where keys are item IDs.
+    :return: None
     """
 
     response = rq.get(BAZAAR_URL)
