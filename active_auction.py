@@ -55,6 +55,7 @@ def get_active_auction(items: dict, page: int) -> None:
         if attributes is not None:
             attribute_keys = sorted(attributes.keys())
             check_combo = True
+            is_kuudra_piece = False
 
             # Get lbin single attribute
             for attribute in attribute_keys:
@@ -66,15 +67,16 @@ def get_active_auction(items: dict, page: int) -> None:
                     item['attributes'][attribute] = attribute_cost
 
                 # Set Kuudra Armor Attributes
-                update_kuudra_piece(items, item_id, attribute, attribute_cost)
+                is_kuudra_piece = update_kuudra_piece(items, item_id, attribute, attribute_cost)
 
             # Get lbin attribute combination if value > X (to check for Kuudra god roll)
-            item_combos = current.get('attribute_combos', {}) if current and 'attribute_combos' in current else {}
-            if check_combo and len(attribute_keys) > 1:
-                attribute_combo = ' '.join(attribute_keys)
-                item_combos[attribute_combo] = min(item_bin, item_combos.get(attribute_combo, item_bin))
-            if item_combos:
-                item['attribute_combos'] = item_combos
+            if is_kuudra_piece:
+                item_combos = current.get('attribute_combos', {}) if current and 'attribute_combos' in current else {}
+                if check_combo and len(attribute_keys) > 1:
+                    attribute_combo = ' '.join(attribute_keys)
+                    item_combos[attribute_combo] = min(item_bin, item_combos.get(attribute_combo, item_bin))
+                if item_combos:
+                    item['attribute_combos'] = item_combos
 
         # Delete attribute variable for no attribute items
         if item['attributes'] == {}:
@@ -90,7 +92,7 @@ def get_active_auction(items: dict, page: int) -> None:
         # print('Auction Process Complete!')
 
 
-def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> None:
+def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> bool:
     """
     Parses Kuudra item into specific piece data to add to API.
 
@@ -109,6 +111,9 @@ def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cos
         # set individual attribute price
         attributes = armor_piece['attributes']
         attributes[attribute] = min(attributes.get(attribute, attribute_cost), attribute_cost)
+
+        return True
+    return False
 
 
 def manage_items(items: dict) -> None:

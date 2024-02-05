@@ -62,6 +62,7 @@ def get_sold_auction(items: dict) -> None:
             item_attributes = item['attributes']
             attribute_keys = sorted(attributes.keys())
             check_combo = True
+            is_kuudra_piece = False
 
             # Get lbin single attribute
             for attribute in attribute_keys:
@@ -77,20 +78,21 @@ def get_sold_auction(items: dict) -> None:
                     item_attributes[attribute]['timestamp'] = now
 
                 # Set Kuudra Armor Attributes
-                update_kuudra_piece(items, item_id, attribute, attribute_cost)
+                is_kuudra_piece = update_kuudra_piece(items, item_id, attribute, attribute_cost)
 
             # Get lbin attribute combination if value > X (to check for Kuudra god roll)
-            item_combos = current.get('attribute_combos', {}) if current and 'attribute_combos' in current else {}
-            if check_combo and len(attribute_keys) > 1:
-                attribute_combo = ' '.join(attribute_keys)
-                current_cost = item_combos[attribute_combo]['lbin'] if attribute_combo in item_combos else item_bin
+            if is_kuudra_piece:
+                item_combos = current.get('attribute_combos', {}) if current and 'attribute_combos' in current else {}
+                if check_combo and len(attribute_keys) > 1:
+                    attribute_combo = ' '.join(attribute_keys)
+                    current_cost = item_combos[attribute_combo]['lbin'] if attribute_combo in item_combos else item_bin
 
-                if item_bin <= current_cost:
-                    item_combos[attribute_combo] = {'lbin': item_bin, 'timestamp': now}
-                elif is_within_percentage(current_cost, item_bin, 5):
-                    item_combos[attribute_combo]['timestamp'] = now
-            if item_combos:
-                item['attribute_combos'] = item_combos
+                    if item_bin <= current_cost:
+                        item_combos[attribute_combo] = {'lbin': item_bin, 'timestamp': now}
+                    elif is_within_percentage(current_cost, item_bin, 5):
+                        item_combos[attribute_combo]['timestamp'] = now
+                if item_combos:
+                    item['attribute_combos'] = item_combos
 
         # Delete attribute variable for no attribute items
         if item['attributes'] == {}:
@@ -102,7 +104,7 @@ def get_sold_auction(items: dict) -> None:
     merge_current(items)
 
 
-def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> None:
+def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> bool:
     """
     Parses Kuudra item into specific piece data to add to API.
 
@@ -110,7 +112,7 @@ def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cos
     :param: item_id - Name of item.
     :param: attribute - Name of attribute.
     :param: attribute_cost - Total value of attribute.
-    :return: None
+    :return: True if piece is a Kuudra piece otherwise False.
     """
     KUUDRA_PIECES = {'FERVOR', 'AURORA', 'TERROR', 'CRIMSON', 'HOLLOW', 'MOLTEN'}
     item_ids = item_id.split('_')
@@ -125,6 +127,9 @@ def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cos
             attributes[attribute] = {'lbin': attribute_cost, 'timestamp': datetime.now().timestamp()}
         elif is_within_percentage(current_cost, attribute_cost, 5):
             attributes[attribute]['timestamp'] = datetime.now().timestamp()
+
+        return True
+    return False
 
 
 def get_items() -> dict:
