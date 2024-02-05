@@ -16,5 +16,4 @@ if __name__ == '__main__':
     get_bazaar(bazaar)
 
     # Send to API
-    print(auction)
     send_data(os.getenv('BAZAAR_URL'), {'items': bazaar}, KEY)
