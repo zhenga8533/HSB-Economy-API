@@ -270,12 +270,13 @@ def save_items(items: dict) -> None:
     clean_items(items)
 
 
-def clean_obj(obj: dict) -> None:
+def clean_obj(obj: dict, low=0) -> None:
     """
     Cleans the provided dictionary by removing entries and preserving their 'lbin' values.
 
     :param: obj - A dictionary to be cleaned, where keys are identifiers and values are dictionaries
                 containing 'lbin'.
+    :param: low - Lowest cost item can be otherwise it is deleted.
     :return: None
     """
 
@@ -283,7 +284,8 @@ def clean_obj(obj: dict) -> None:
     for key in keys:
         key_lbin = obj[key]['lbin']
         del obj[key]
-        obj[key] = key_lbin
+        if key_lbin > low:
+            obj[key] = key_lbin
 
 
 def clean_items(items: dict) -> None:
@@ -301,7 +303,7 @@ def clean_items(items: dict) -> None:
 
         # remove attribute timestamps
         clean_obj(item.get('attributes', {}))
-        clean_obj(item.get('attribute_combos', {}))
+        clean_obj(item.get('attribute_combos', {}), low=25_000_000)
 
     send_items(items)
 

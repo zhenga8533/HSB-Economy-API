@@ -89,6 +89,7 @@ def get_active_auction(items: dict, page: int) -> None:
         get_active_auction(items, page + 1)
     else:
         manage_items(items)
+        save_items(items)
         # print('Auction Process Complete!')
 
 
@@ -130,8 +131,6 @@ def manage_items(items: dict) -> None:
     if not os.path.isfile('data/active/day'):
         with open('data/active/day', 'wb') as file:
             pickle.dump(-1, file)
-
-    save_items(items)
 
 
 def save_items(items: dict) -> None:
