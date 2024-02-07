@@ -8,6 +8,7 @@ from util.items import LIMITED
 from util.functions import decode_nbt, is_within_percentage, send_data
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions_ended'
+INCREMENT = 2_500
 now = datetime.now().timestamp()
 
 
@@ -168,7 +169,7 @@ def parse_obj(obj: dict, seconds_frame: int) -> None:
         if now - obj[key].get('timestamp', now) > seconds_frame:
             del obj[key]
         else:
-            obj[key]['lbin'] += 1_000
+            obj[key]['lbin'] += INCREMENT
 
 
 def parse_items(items: dict) -> None:
@@ -193,7 +194,7 @@ def parse_items(items: dict) -> None:
         elif now - item.get('timestamp', now) > week_seconds:
             del items[key]
         elif current_lbin != 0:
-            item['lbin'] += 1_000
+            item['lbin'] += INCREMENT
 
         # parse attribute pricing
         parse_obj(item.get('attributes', {}), week_seconds)
