@@ -304,7 +304,7 @@ def clean_items(items: dict) -> None:
 
         # remove attribute timestamps
         clean_obj(item.get('attributes', {}))
-        clean_obj(item.get('attribute_combos', {}), low=25_000_000)
+        clean_obj(item.get('attribute_combos', {}), low=10_000_000)
 
     send_items(items)
 
