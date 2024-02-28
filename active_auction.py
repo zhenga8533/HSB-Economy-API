@@ -129,6 +129,5 @@ def save_items(items: dict) -> None:
         os.makedirs('data/active')
 
     # Save items
-    print(items)
     with open(f'data/active/auction', 'wb') as file:
         pickle.dump(items, file)
