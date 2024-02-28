@@ -2,8 +2,7 @@ import requests as rq
 import json
 import os
 import pickle
-from datetime import datetime
-from util.functions import decode_nbt, average_objects
+from util.functions import decode_nbt
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions'
 
@@ -88,7 +87,6 @@ def get_active_auction(items: dict, page: int) -> None:
     if page + 1 < data['totalPages']:
         get_active_auction(items, page + 1)
     else:
-        manage_items(items)
         save_items(items)
         # print('Auction Process Complete!')
 
@@ -117,9 +115,10 @@ def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cos
     return False
 
 
-def manage_items(items: dict) -> None:
+def save_items(items: dict) -> None:
     """
     Manages the provided 'items' dictionary, saving it to a file for persistence.
+    Saves the provided 'items' dictionary to files, managing daily and weekly averages for persistence.
 
     :param: items - A dictionary containing information about items, where keys are item IDs.
     :return: None
@@ -128,45 +127,8 @@ def manage_items(items: dict) -> None:
     # Check for data directory and files
     if not os.path.exists('data/active'):
         os.makedirs('data/active')
-    if not os.path.isfile('data/active/day'):
-        with open('data/active/day', 'wb') as file:
-            pickle.dump(-1, file)
 
-
-def save_items(items: dict) -> None:
-    """
-    Saves the provided 'items' dictionary to files, managing daily and weekly averages for persistence.
-
-    :param: items - A dictionary containing information about items, where keys are item IDs.
-    :return: None
-    """
-
-    today = datetime.now().weekday()
-
-    # Load and save current day
-    with open(f'data/active/day', 'rb') as file:
-        day = pickle.load(file)
-    with open('data/active/day', 'wb') as file:
-        pickle.dump(today, file)
-
-    # Average out data with higher bias on day/hour
-    if today == day:
-        with open(f'data/active/auction_{today}', 'rb') as file:
-            data = pickle.load(file)
-        average_objects(items, data, 2)
-
-    # Save new data to current day file
-    with open(f'data/active/auction_{today}', 'wb') as file:
-        pickle.dump(items, file)
-
-    # Average weekly values
-    count = 1
-    for file_name in os.listdir('data/active'):
-        if file_name != f'auction_{today}' and file_name != 'day':
-            count += 1
-            with open(f'data/active/{file_name}', 'rb') as file:
-                average_objects(items, pickle.load(file), count)
-
-    # Save average to auction file
+    # Save items
+    print(items)
     with open(f'data/active/auction', 'wb') as file:
         pickle.dump(items, file)
