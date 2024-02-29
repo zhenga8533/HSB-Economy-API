@@ -1,4 +1,7 @@
 import requests as rq
+import os
+from dotenv import load_dotenv
+from util.functions import send_data
 
 BAZAAR_URL = 'https://api.hypixel.net/v2/skyblock/bazaar'
 
@@ -25,3 +28,26 @@ def get_bazaar(items: dict) -> None:
 
         items[product] = [quick_status['sellPrice'], quick_status['buyPrice']]
     # print('Bazaar Process Complete!')
+
+
+def send_items(items: dict) -> None:
+    """
+    Sends the provided 'items' data using an API call.
+
+    :param: items - A dictionary containing lbin information about items.
+    :return: None
+    """
+
+    load_dotenv()
+    KEY = os.getenv('KEY')
+    send_data(os.getenv('AUCTION_URL'), {'items': items}, KEY)
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    KEY = os.getenv('KEY')
+    bazaar = {}
+    get_bazaar(bazaar)
+
+    # Send to API
+    send_data(os.getenv('BAZAAR_URL'), {'items': bazaar}, KEY)

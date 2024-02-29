@@ -131,3 +131,9 @@ def save_items(items: dict) -> None:
     # Save items
     with open(f'data/active/auction', 'wb') as file:
         pickle.dump(items, file)
+
+
+if __name__ == '__main__':
+    # Get data to send
+    ah = {}
+    get_active_auction(ah, 0)
