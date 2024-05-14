@@ -9,6 +9,7 @@ from util.functions import decode_nbt, is_within_percentage, send_data
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions_ended'
 INCREMENT = 2_500
+WEEK_SECONDS = 604_800
 now = datetime.now().timestamp()
 
 
@@ -54,6 +55,8 @@ def get_sold_auction(items: dict) -> None:
             or item_bin < current_lbin else current.get('timestamp')
         item = {'lbin': item_bin if current is None else min(item_bin, current.get('lbin')),
                 'timestamp': timestamp}
+        if timestamp + WEEK_SECONDS > now:
+            item = {'lbin': item_bin, 'timestamp': now}
 
         # Attributes Handling
         attributes = extra_attributes.get('attributes')
@@ -73,7 +76,7 @@ def get_sold_auction(items: dict) -> None:
                 attribute_cost = item_bin / (2 ** (tier - 1))
                 current_cost = item_attributes[attribute]['lbin'] if attribute in item_attributes else attribute_cost
 
-                if attribute_cost <= current_cost:
+                if attribute_cost <= current_cost or item_attributes[attribute]['timestamp'] + WEEK_SECONDS > now:
                     item_attributes[attribute] = {'lbin': attribute_cost, 'timestamp': now}
                 elif is_within_percentage(current_cost, attribute_cost, 5):
                     item_attributes[attribute]['timestamp'] = now
@@ -88,7 +91,7 @@ def get_sold_auction(items: dict) -> None:
                     attribute_combo = ' '.join(attribute_keys)
                     current_cost = item_combos[attribute_combo]['lbin'] if attribute_combo in item_combos else item_bin
 
-                    if item_bin <= current_cost:
+                    if item_bin <= current_cost or item_combos[attribute_combo]['timestamp'] + WEEK_SECONDS > now:
                         item_combos[attribute_combo] = {'lbin': item_bin, 'timestamp': now}
                     elif is_within_percentage(current_cost, item_bin, 5):
                         item_combos[attribute_combo]['timestamp'] = now
@@ -153,23 +156,18 @@ def get_items() -> dict:
         return pickle.load(file)
 
 
-def parse_obj(obj: dict, seconds_frame: int) -> None:
+def parse_obj(obj: dict) -> None:
     """
-    Updates the provided dictionary by removing entries with timestamps older than 'seconds_frame'
-    and incrementing the 'lbin' value for remaining entries.
+    Updates the provided dictionary by  incrementing the 'lbin' value for remaining entries.
 
     :param: obj - A dictionary to be processed, where keys are identifiers and values are dictionaries
                 containing 'timestamp' and 'lbin'.
-    :param: seconds_frame - The time frame in seconds. Entries older than this duration will be removed.
     :return: None
     """
 
     keys = list(obj.keys())
     for key in keys:
-        if now - obj[key].get('timestamp', now) > seconds_frame:
-            del obj[key]
-        else:
-            obj[key]['lbin'] += INCREMENT
+        obj[key]['lbin'] += INCREMENT
 
 
 def parse_items(items: dict) -> None:
@@ -181,7 +179,6 @@ def parse_items(items: dict) -> None:
     :return: None
     """
 
-    week_seconds = 604_800
     keys = list(items.keys())
 
     for key in keys:
@@ -189,16 +186,12 @@ def parse_items(items: dict) -> None:
         current_lbin = item.get('lbin', 0)
 
         # parse pricing
-        if current_lbin > 100_000_000:
-            continue
-        elif now - item.get('timestamp', now) > week_seconds:
-            del items[key]
-        elif current_lbin != 0:
+        if current_lbin != 0:
             item['lbin'] += INCREMENT
 
         # parse attribute pricing
-        parse_obj(item.get('attributes', {}), week_seconds)
-        parse_obj(item.get('attribute_combos', {}), week_seconds)
+        parse_obj(item.get('attributes', {}))
+        parse_obj(item.get('attribute_combos', {}))
 
 
 def timestamp_obj(obj: dict, var: str) -> None:
@@ -234,7 +227,11 @@ def merge_current(items: dict) -> None:
         data = pickle.load(file)
 
         for key in data:
-            if key in items and items[key].get('lbin', 0) * 5 >= data[key].get('lbin', 0):
+            timestamp = items[key].get('timestamp', 0)
+            currPrice = items[key].get('lbin', 0)
+            binPrice = data[key].get('lbin', 0)
+
+            if key in items and currPrice * 5 >= binPrice > currPrice and timestamp + WEEK_SECONDS < now:
                 continue
 
             items[key] = data[key]
@@ -245,8 +242,13 @@ def merge_current(items: dict) -> None:
             timestamp_obj(items[key], 'attribute_combos')
 
     # Finally merge with hard coded items
+
     for key in LIMITED:
-        if key in items and items[key].get('lbin', 0) * 5 >= LIMITED[key]:
+        timestamp = items[key].get('timestamp', 0)
+        softPrice = items[key].get('lbin', 0)
+        hardPrice = LIMITED[key]
+
+        if key in items and softPrice * 5 >= hardPrice > softPrice and timestamp + WEEK_SECONDS < now:
             continue
 
         items[key] = {
