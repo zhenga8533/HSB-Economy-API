@@ -227,8 +227,8 @@ def merge_current(items: dict) -> None:
         data = pickle.load(file)
 
         for key in data:
-            timestamp = items[key].get('timestamp', 0)
-            currPrice = items[key].get('lbin', 0)
+            timestamp = items[key].get('timestamp', 0) if key in items else 0
+            currPrice = items[key].get('lbin', 0) if key in items else 0
             binPrice = data[key].get('lbin', 0)
 
             if key in items and currPrice * 5 >= binPrice > currPrice and timestamp + WEEK_SECONDS < now:
@@ -244,8 +244,8 @@ def merge_current(items: dict) -> None:
     # Finally merge with hard coded items
 
     for key in LIMITED:
-        timestamp = items[key].get('timestamp', 0)
-        softPrice = items[key].get('lbin', 0)
+        timestamp = items[key].get('timestamp', 0) if key in items else 0
+        softPrice = items[key].get('lbin', 0) if key in items else 0
         hardPrice = LIMITED[key]
 
         if key in items and softPrice * 5 >= hardPrice > softPrice and timestamp + WEEK_SECONDS < now:
