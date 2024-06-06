@@ -106,6 +106,9 @@ def get_sold_auction(items: dict) -> None:
         items[item_id] = item
 
     merge_current(items)
+    save_items(items)
+    clean_items(items)
+    send_items(items)
 
 
 def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> bool:
@@ -242,7 +245,6 @@ def merge_current(items: dict) -> None:
             timestamp_obj(items[key], 'attribute_combos')
 
     # Finally merge with hard coded items
-
     for key in LIMITED:
         timestamp = items[key].get('timestamp', 0) if key in items else 0
         softPrice = items[key].get('lbin', 0) if key in items else 0
@@ -256,9 +258,6 @@ def merge_current(items: dict) -> None:
             'timestamp': now
         }
 
-    save_items(items)
-
-
 def save_items(items: dict) -> None:
     """
     Saves the provided item data to the specified file.
@@ -269,8 +268,6 @@ def save_items(items: dict) -> None:
 
     with open(f'data/sold/auction', 'wb') as file:
         pickle.dump(items, file)
-
-    clean_items(items)
 
 
 def clean_obj(obj: dict, low=0) -> None:
@@ -307,8 +304,6 @@ def clean_items(items: dict) -> None:
         # remove attribute timestamps
         clean_obj(item.get('attributes', {}))
         clean_obj(item.get('attribute_combos', {}), low=10_000_000)
-
-    send_items(items)
 
 
 def send_items(items: dict) -> None:
