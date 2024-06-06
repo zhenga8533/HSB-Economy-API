@@ -1,10 +1,8 @@
-import requests as rq
+import json
 import os
 import pickle
+import requests as rq
 from util.items import parse_item
-import json
-
-AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions'
 
 
 def get_active_auction(items: dict, page: int, log: bool=False) -> None:
@@ -17,7 +15,7 @@ def get_active_auction(items: dict, page: int, log: bool=False) -> None:
     """
 
     # Get Auction Data
-    response = rq.get(AUCTION_URL, params={'page': page})
+    response = rq.get('https://api.hypixel.net/v2/skyblock/auctions', params={'page': page})
     if response.status_code != 200:
         print(f"Failed to get data. Status code: {response.status_code}")
         return
@@ -25,15 +23,14 @@ def get_active_auction(items: dict, page: int, log: bool=False) -> None:
 
     # Loop through Auction Data
     if log:
-        print(f"Auction Looping ({page + 1}/{data['totalPages']})")
+        print(f"Auction Looping ({page + 1}/{data['totalPages']})", end='\r')
     for auction in data['auctions']:
         if not auction['bin']:
             continue
 
         parse_item(items, auction)
     if page + 1 < data['totalPages']:
-        return
-        get_active_auction(items, page + 1)
+        get_active_auction(items, page + 1, log)
     elif log:
         print('Auction Process Complete!')
 
