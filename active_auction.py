@@ -7,7 +7,7 @@ from util.functions import decode_nbt
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions'
 
 
-def get_active_auction(items: dict, page: int) -> None:
+def get_active_auction(items: dict, page: int, log: bool=False) -> None:
     """
     Fetch auction data and process items lbin data.
 
@@ -16,21 +16,24 @@ def get_active_auction(items: dict, page: int) -> None:
     :return: None
     """
 
+    # Get Auction Data
     response = rq.get(AUCTION_URL, params={'page': page})
-
     if response.status_code != 200:
         print(f"Failed to get data. Status code: {response.status_code}")
         return
-
     data = response.json()
-    # print(f"Auction Looping ({page + 1}/{data['totalPages']})")
+
+    # Loop through Auction Data
+    if log:
+        print(f"Auction Looping ({page + 1}/{data['totalPages']})")
     for auction in data["auctions"]:
         if not auction['bin']:
             continue
 
-        # Get Item ID
+        # Decode NBT Data
         nbt_object = decode_nbt(auction)
-        extra_attributes = nbt_object['']['i'][0]['tag']['ExtraAttributes']
+        tag = nbt_object['']['i'][0]['tag']
+        extra_attributes = tag['ExtraAttributes']
 
         # Item ID Handling
         item_id = str(extra_attributes.get('id'))
@@ -47,11 +50,16 @@ def get_active_auction(items: dict, page: int) -> None:
         item_bin = auction['starting_bid']
         item = {'lbin': item_bin if current is None else min(item_bin, current.get('lbin'))}
 
+        # Pet Level Handling
+        if extra_attributes.get('petInfo') is not None:
+            item['levels'] = {} if current is None else current.get('levels', {})
+            pet_level = tag['display']['Name'].split(' ')[1][0:-1]
+            item['levels'][pet_level] = min(item_bin, item['levels'].get(pet_level, item_bin))
+
         # Attributes Handling
         attributes = extra_attributes.get('attributes')
-        item['attributes'] = {} if current is None else current.get('attributes') or {}
-
         if attributes is not None:
+            item['attributes'] = {} if current is None else current.get('attributes', {})
             attribute_keys = sorted(attributes.keys())
             check_combo = True
             is_kuudra_piece = False
@@ -77,18 +85,16 @@ def get_active_auction(items: dict, page: int) -> None:
                 if item_combos:
                     item['attribute_combos'] = item_combos
 
-        # Delete attribute variable for no attribute items
-        if item['attributes'] == {}:
-            del item['attributes']
-
         # Set Item
         items[item_id] = item
 
     if page + 1 < data['totalPages']:
+        return
         get_active_auction(items, page + 1)
     else:
         save_items(items)
-        # print('Auction Process Complete!')
+        if log:
+            print('Auction Process Complete!')
 
 
 def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> bool:
@@ -136,4 +142,5 @@ def save_items(items: dict) -> None:
 if __name__ == '__main__':
     # Get data to send
     ah = {}
-    get_active_auction(ah, 0)
+    get_active_auction(ah, 0, True)
+    print(ah)

@@ -7,7 +7,7 @@ from util.functions import decode_nbt
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions'
 
 
-def get_active_auction(items: dict, page: int, log: bool=False) -> None:
+def get_active_auction(items: dict, page: int) -> None:
     """
     Fetch auction data and process items lbin data.
 
@@ -16,34 +16,26 @@ def get_active_auction(items: dict, page: int, log: bool=False) -> None:
     :return: None
     """
 
-    # Get Auction Data
     response = rq.get(AUCTION_URL, params={'page': page})
+
     if response.status_code != 200:
         print(f"Failed to get data. Status code: {response.status_code}")
         return
-    data = response.json()
 
-    # Loop through Auction Data
-    if log:
-        print(f"Auction Looping ({page + 1}/{data['totalPages']})")
+    data = response.json()
+    # print(f"Auction Looping ({page + 1}/{data['totalPages']})")
     for auction in data["auctions"]:
         if not auction['bin']:
             continue
 
-        # Decode NBT Data
+        # Get Item ID
         nbt_object = decode_nbt(auction)
-        tag = nbt_object['']['i'][0]['tag']
-        extra_attributes = tag['ExtraAttributes']
+        extra_attributes = nbt_object['']['i'][0]['tag']['ExtraAttributes']
 
         # Item ID Handling
         item_id = str(extra_attributes.get('id'))
         if item_id == "PET":
             pet_info = json.loads(nbt_object['']['i'][0]['tag']['ExtraAttributes']['petInfo'])
-
-            
-            level = tag['display']['Name'].split(' ')[1][0:-1]
-
-
             item_id = f'{pet_info["tier"]}_{pet_info["type"]}'
         elif item_id == "RUNE":
             runes = nbt_object['']['i'][0]['tag']['ExtraAttributes']['runes']
@@ -93,12 +85,10 @@ def get_active_auction(items: dict, page: int, log: bool=False) -> None:
         items[item_id] = item
 
     if page + 1 < data['totalPages']:
-        return
         get_active_auction(items, page + 1)
     else:
         save_items(items)
-        if log:
-            print('Auction Process Complete!')
+        # print('Auction Process Complete!')
 
 
 def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> bool:
@@ -146,4 +136,4 @@ def save_items(items: dict) -> None:
 if __name__ == '__main__':
     # Get data to send
     ah = {}
-    get_active_auction(ah, 0, True)
+    get_active_auction(ah, 0)
