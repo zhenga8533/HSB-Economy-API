@@ -4,8 +4,10 @@ import os
 import pickle
 from datetime import datetime
 from dotenv import load_dotenv
+from util.items import parse_item
 from util.rare import LIMITED
-from util.functions import decode_nbt, is_within_percentage, send_data
+from util.functions import is_within_percentage, send_data
+
 
 AUCTION_URL = 'https://api.hypixel.net/v2/skyblock/auctions_ended'
 INCREMENT = 2_500

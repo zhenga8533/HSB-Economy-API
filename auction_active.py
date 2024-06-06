@@ -26,10 +26,8 @@ def get_active_auction(items: dict, page: int, log: bool=False) -> None:
     if log:
         print(f"Auction Looping ({page + 1}/{data['totalPages']})", end='\r')
     for auction in data['auctions']:
-        if not auction['bin']:
-            continue
-
-        parse_item(items, auction)
+        if auction['bin']:
+            parse_item(items, auction)
     if page + 1 < data['totalPages']:
         get_active_auction(items, page + 1, log)
     elif log:

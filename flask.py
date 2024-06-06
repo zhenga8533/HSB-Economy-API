@@ -3,6 +3,7 @@ import time
 import os
 from dotenv import load_dotenv
 
+
 app = Flask(__name__)
 load_dotenv()
 KEY = os.getenv('KEY')
