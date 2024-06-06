@@ -11,6 +11,7 @@ def get_active_auction(items: dict, page: int, log: bool=False) -> None:
 
     :param: items - Item data object
     :param: page - Page number of the auction data
+    :param: log - Whether to log the process
     :return: None
     """
 
@@ -41,6 +42,7 @@ def save_items(items: dict, log: bool=False) -> None:
     Saves the provided 'items' dictionary to files, managing daily and weekly averages for persistence.
 
     :param: items - A dictionary containing information about items, where keys are item IDs.
+    :param: log - Whether to log the process
     :return: None
     """
 
