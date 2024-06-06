@@ -1,228 +1,98 @@
-import requests as rq
+
+import base64
+import gzip
+import io
 import json
+from nbtlib import Compound
 
 
-# Limited items last updated 02/03/2024
-LIMITED = {
-    "PET_SKIN_ENDERMAN": 800000000.0,
-    "SUPERIOR_BABY": 2000000000.0,
-    "PET_SKIN_RABBIT": 800000000.0,
-    "DIVER_PUFFER": 190028992.0,
-    "REAPER_SPIRIT": 1930000000.0,
-    "PET_SKIN_ROCK_THINKING": 1391629952.0,
-    "PET_SKIN_ROCK_LAUGH": 1500000000.0,
-    "PET_SKIN_ROCK_SMILE": 1000000000.0,
-    "PET_SKIN_ROCK_EMBARRASSED": 1536099968.0,
-    "PET_SKIN_ROCK_DERP": 1500000000.0,
-    "PET_SKIN_ROCK_COOL": 1600000000.0,
-    "MASTIFF_PUPPY": 340000000.0,
-    "PET_SKIN_GUARDIAN": 422222016.0,
-    "PERFECT_FORGE": 400000000.0,
-    "FROZEN_BLAZE_ICICLE": 400000000.0,
-    "PET_SKIN_TIGER_TWILIGHT": 1800000000.0,
-    "TARANTULA_BLACK_WIDOW": 250000000.0,
-    "STRONG_BABY": 1550000000.0,
-    "HOLY_BABY": 900000000.0,
-    "PROTECTOR_BABY": 1490000000.0,
-    "OLD_BABY": 800000000.0,
-    "WISE_BABY": 1250000000.0,
-    "YOUNG_BABY": 1600000000.0,
-    "UNSTABLE_BABY": 1100000000.0,
-    "PET_SKIN_SHEEP_BLACK": 2120000000.0,
-    "PET_SKIN_SHEEP_PINK": 1830000000.0,
-    "PET_SKIN_SHEEP_LIGHT_BLUE": 1127500032.0,
-    "PET_SKIN_SHEEP_PURPLE": 850000000.0,
-    "PET_SKIN_SHEEP_LIGHT_GREEN": 2045560064.0,
-    "PET_SKIN_SHEEP_WHITE": 1484999936.0,
-    "PET_SKIN_WITHER": 490000000.0,
-    "PET_SKIN_SILVERFISH": 240000000.0,
-    "SUPERIOR_SHIMMER": 377000000.0,
-    "PET_SKIN_ELEPHANT_PINK": 1500000000.0,
-    "PET_SKIN_ELEPHANT_BLUE": 760000000.0,
-    "PET_SKIN_ELEPHANT_ORANGE": 500000000.0,
-    "PET_SKIN_YETI_GROWN_UP": 365000000.0,
-    "PET_SKIN_JERRY_RED_ELF": 1650000000.0,
-    "PET_SKIN_JERRY_GREEN_ELF": 1475000064.0,
-    "SNOW_SNOWGLOBE": 400000000.0,
-    "PET_SKIN_SHEEP_NEON_BLUE": 1884649984.0,
-    "PET_SKIN_SHEEP_NEON_RED": 1230000000.0,
-    "PET_SKIN_SHEEP_NEON_YELLOW": 1530000000.0,
-    "PET_SKIN_SHEEP_NEON_GREEN": 1088070016.0,
-    "PET_SKIN_MONKEY_GOLDEN": 521249984.0,
-    "PET_SKIN_SILVERFISH_FOSSILIZED": 150000000.0,
-    "PET_SKIN_HORSE_ZOMBIE": 150000000.0,
-    "PET_SKIN_DRAGON_NEON_BLUE": 348500000.0,
-    "PET_SKIN_DRAGON_NEON_RED": 448000000.0,
-    "PET_SKIN_DRAGON_NEON_PURPLE": 355000000.0,
-    "PET_SKIN_ELEPHANT_GREEN": 500000000.0,
-    "PET_SKIN_ELEPHANT_RED": 490000000.0,
-    "PET_SKIN_ELEPHANT_PURPLE": 390500000.0,
-    "ENDERPACK": 40000000.0,
-    "PET_SKIN_WHALE_ORCA": 240000000.0,
-    "PET_SKIN_ELEPHANT_MONOCHROME": 60000000.0,
-    "SHADOW_ASSASSIN_CRIMSON": 39000000.0,
-    "SHADOW_ASSASSIN_MAUVE": 58000000.0,
-    "SHADOW_ASSASSIN_ADMIRAL": 55000000.0,
-    "GREEN_EGG": 65000000.0,
-    "PET_SKIN_CHICKEN_BABY_CHICK": 200000000.0,
-    "PURPLE_EGG": 29900000.0,
-    "BLUE_EGG": 75000000.0,
-    "PET_SKIN_RABBIT_ROSE": 110000000.0,
-    "PET_SKIN_RABBIT_AQUAMARINE": 113000000.0,
-    "PET_SKIN_BLACK_CAT_ONYX": 88500000.0,
-    "PET_SKIN_BLACK_CAT_IVORY": 70000000.0,
-    "PET_SKIN_MONKEY_GORILLA": 94763296.0,
-    "PET_SKIN_ENDERMITE_RADIANT": 81178496.0,
-    "PET_SKIN_DRAGON_PASTEL": 96100000.0,
-    "UNSTABLE_SHIMMER": 313220000.0,
-    "STRONG_SHIMMER": 333332992.0,
-    "YOUNG_SHIMMER": 319630016.0,
-    "WISE_SHIMMER": 275000000.0,
-    "OLD_SHIMMER": 218332992.0,
-    "HOLY_SHIMMER": 300000000.0,
-    "PROTECTOR_SHIMMER": 200000000.0,
-    "PET_SKIN_WOLF": 119500000.0,
-    "PET_SKIN_HOUND_BEAGLE": 53000000.0,
-    "PET_SKIN_SQUID_GLOW": 100000000.0,
-    "PET_SKIN_TIGER_SABER_TOOTH": 22000000.0,
-    "PET_SKIN_PARROT_GOLD_MACAW": 40000000.0,
-    "PET_SKIN_BAT_VAMPIRE": 52000000.0,
-    "PET_SKIN_PHOENIX_ICE": 58647500.0,
-    "PET_SKIN_OCELOT_SNOW_TIGER": 68244400.0,
-    "PET_SKIN_BLAZE_FROZEN": 50000000.0,
-    "PET_SKIN_DOLPHIN_SNUBFIN": 19000000.0,
-    "PET_SKIN_DOLPHIN_SNUBNOSE_RED": 29000000.0,
-    "PET_SKIN_DOLPHIN_SNUBNOSE_PURPLE": 25500000.0,
-    "PET_SKIN_DOLPHIN_SNUBNOSE_GREEN": 25000000.0,
-    "PET_SKIN_TIGER_GOLDEN": 33333300.0,
-    "PET_SKIN_ARMADILLO_ENCHANTED": 90000000.0,
-    "PET_SKIN_ARMADILLO_SEAFOAM": 200000000.0,
-    "PET_SKIN_JERRY_HANDSOME": 18030100.0,
-    "PET_SKIN_KUUDRA_LOYALTY": 38000000.0,
-    "TRUE_WARDEN": 374000000.0,
-    "PET_SKIN_ENDERMAN_XENON": 48000000.0,
-    "PET_SKIN_ENDERMAN_NEON": 46000000.0,
-    "PET_SKIN_BAL_INFERNO": 175000000.0,
-    "PET_SKIN_MEGALODON_BABY": 21000000.0,
-    "PET_SKIN_ENDER_DRAGON_UNDEAD": 20370000.0,
-    "PET_SKIN_BEE_RGBEE": 38000000.0,
-    "PET_SKIN_JELLYFISH_LUMINESCENT": 110980000.0,
-    "PET_SKIN_GOLDEN_DRAGON_ANUBIS": 133333000.0,
-    "PET_SKIN_SHEEP_BLACK_WOOLY": 41285000.0,
-    "PET_SKIN_SHEEP_CHROMA_WOOLY": 39250000.0,
-    "PET_SKIN_SHEEP_WHITE_WOOLY": 37333300.0,
-    "PET_SKIN_MOOSHROOM_COW_MOOCELIUM": 130000000.0,
-    "PET_SKIN_SNOWMAN_ICE_GOLEM": 37500000.0,
-    "PET_SKIN_TIGER_NEON": 70000000.0,
-    "PET_SKIN_CHICKEN_TURKEY": 31750000.0,
-    "NECRON_CELESTIAL": 133250000.0,
-    "MAXOR_CELESTIAL": 275000000.0,
-    "STORM_CELESTIAL": 250000000.0,
-    "GOLDOR_CELESTIAL": 545000000.0,
-    "PENGUIN_BACKPACK": 20000000.0,
-    "REINDEER_BACKPACK": 25000000.0,
-    "PET_SKIN_GRIFFIN_REINDRAKE": 60000000.0,
-    "BABYSEAL_BACKPACK": 32000000.0,
-    "PET_SKIN_REINDEER_AURORA": 46000000.0,
-    "WITHER_GOGGLES_CYBERPUNK": 205000000.0,
-    "WITHER_GOGGLES_CELESTIAL": 492249984.0,
-    "LUNAR_RABBIT_HAT": 81500000.0,
-    "PET_SKIN_RABBIT_LUNAR": 69984800.0,
-    "PET_SKIN_SCATHA_ALBINO": 44496700.0,
-    "PET_SKIN_SCATHA_GOLDEN": 58000000.0,
-    "PET_SKIN_SCATHA_DARK": 85000000.0,
-    "FROG_BARN_SKIN": 167500000.0,
-    "GLOWING_GRAPE_FLUX": 51500000.0,
-    "GOLDEN_APPLE_FLUX": 43248300.0,
-    "GLISTENING_MELON_FLUX": 59000000.0,
-    "JERRY_BARN_SKIN": 34500000.0,
-    "PET_SKIN_AMMONITE_NATURAL": 33900000.0,
-    "PET_SKIN_AMMONITE_MAGMA": 44075000.0,
-    "SHADOW_ASSASSIN_SLY_FOX": 16600000.0,
-    "PINWHEEL_HOUSE_BARN_SKIN": 25500000.0,
-    "PET_SKIN_WHALE_COSMIC": 27935000.0,
-    "PET_SKIN_MONKEY_LEMUR": 27062000.0,
-    "PIRATE_BOMB_FLUX": 13527500.0,
-    "PET_SKIN_PARROT_BUCCANEER": 24999000.0,
-    "PET_SKIN_ENDER_DRAGON_BABY_BLUE": 48200000.0,
-    "DRAGON_EGG_BACKPACK": 8785000.0,
-    "PET_SKIN_ENDER_DRAGON_BABY": 30900000.0,
-    "MUSHROOM_BARN_SKIN": 70000000.0,
-    "FERMENTO_BLOOM": 93833296.0,
-    "FERMENTO_LEAF": 24700000.0,
-    "REAPER_RED_ONI_MASK": 33466700.0,
-    "REAPER_BLUE_ONI_MASK": 34500000.0,
-    "REAPER_ONI_MASK": 50000000.0,
-    "GOLDEN_ANCIENT_EGG_FLUX": 22825000.0,
-    "PET_SKIN_TURTLE_ANCIENT_GOLDEN": 31000000.0,
-    "BONZO_MASK_JESTER": 59043900.0,
-    "METEOR_MAGMA_LORD": 89500000.0,
-    "GEMSTONE_DIVAN": 155675008.0,
-    "PET_SKIN_BABY_YETI_DARK_SASQUATCH": 21000000.0,
-    "PET_SKIN_BABY_YETI_LIGHT_SASQUATCH": 17200000.0,
-    "PET_SKIN_BABY_YETI_MIDNIGHT": 28094200.0,
-    "FINAL_DESTINATION_ENDER_KNIGHT": 19642900.0,
-    "PET_SKIN_WOLF_HUSKY": 33000000.0,
-    "TARANTULA_REDBACK": 15282500.0,
-    "PET_SKIN_BAT_BONE": 35000000.0,
-    "PET_SKIN_BAT_CANDY": 30000000.0,
-    "CADUCEUS_MENDING_CROWN": 40000000.0,
-    "PET_SKIN_RAT_GYM_RAT": 30000000.0,
-    "PET_SKIN_RAT_MR_CLAWS": 25000000.0,
-    "PET_SKIN_RAT_KARATE": 29000000.0,
-    "PET_SKIN_RAT_SECRAT_SERVICE": 30500000.0,
-    "PET_SKIN_RAT_NINJA": 19800000.0,
-    "PET_SKIN_RAT_PIRATE": 20820000.0,
-    "PET_SKIN_RAT_SQUEAKHEART": 25249500.0,
-    "PET_SKIN_RAT_RAT-STRONAUT": 43000000.0,
-    "PET_SKIN_RAT_SECURATY_GUARD": 20900000.0,
-    "PET_SKIN_RAT_JUNK_RAT": 21500000.0,
-    "PET_SKIN_CHICKEN_RUBBER": 77000000.0,
-    "PET_SKIN_ENDERMAN_SUN": 32250000.0,
-    "PET_SKIN_ENDERMAN_NEBULA": 44300000.0,
-    "PET_SKIN_ENDERMAN_BLUE_MOON": 42431700.0,
-    "PET_SKIN_SLUG_AZURE_SEA_SLUG": 13525000.0,
-    "PET_SKIN_SLUG_VIOLET_SEA_SLUG": 17300000.0,
-    "PET_SKIN_SLUG_LEAF_SHEEP_SEA_SLUG": 20200000.0,
-    "PET_SKIN_SNAIL_RAINBOW": 29224900.0,
-    "PET_SKIN_FOUR_SEASONS_GRIFFIN": 41500000.0,
-    "PET_SKIN_CAT_SPACE_KITTY": 20800000.0,
-    "PET_SKIN_WOLF_DOGE": 28350000.0,
-    "PET_SKIN_ZOMBIE_SENTINEL": 49450000.0,
-    "PET_SKIN_ZOMBIE_BRAIN_FREEZE": 23000000.0,
-    "SENTINEL_WARDEN": 131666000.0,
-    "PET_SKIN_ZOMBIE_BIG_BRAIN": 34000000.0,
-    "PET_SKIN_BABY_YETI_PLUSHIE": 19666700.0,
-    "PET_SKIN_SNOWMAN_PLUSHIE": 18000000.0,
-    "MAGIC_CUBE_FLUX": 47616400.0,
-    "PET_SKIN_REINDEER_PLUSHIE": 19900000.0,
-    "PET_SKIN_ELEPHANT_BLACK_PLUSHIE": 33737500.0,
-    "PET_SKIN_ELEPHANT_GRAY_PLUSHIE": 30000000.0,
-    "PET_SKIN_ELEPHANT_BLUE_PLUSHIE": 38500000.0,
-    "PET_SKIN_ELEPHANT_COSMIC": 39009500.0,
-    "PET_SKIN_ELEPHANT_PINK_PLUSHIE": 48500000.0,
-    "PET_SKIN_MONKEY_SEE_HEAR_SPEAK": 80500000.0,
-    "PET_SKIN_GIRAFFE_SAFARI": 38000000.0,
-    "PET_SKIN_MONKEY_ASTRONAUT": 47077800.0,
-    "PET_SKIN_OCELOT_JUNGLE": 44344000.0,
-    "PET_SKIN_MITHRIL_GOLEM_CRYSTAL": 16971100.0,
-    "PET_SKIN_MITHRIL_GOLEM_CHERRY_BLOSSOM": 60000000.0,
-    "PET_SKIN_MITHRIL_GOLEM_COPPER": 64000000.0,
-    "ENRAGER": 3134710016.0,
-    "TENTACLE_DYE": 10000000000.0
-}
+def decode_nbt(auction: dict) -> dict:
+    """
+    Decode => Decompress => Warp in io.BytesIO to parse the Base64-encoded data
+
+    :param: auction - Auction data containing the item information
+    :return: Parsed NBT data as a Compound object
+    """
+
+    encoded_data = auction['item_bytes']
+    decoded_data = base64.b64decode(encoded_data)
+    decompressed_data = gzip.decompress(decoded_data)
+    return Compound.parse(io.BytesIO(decompressed_data))
 
 
-if __name__ == '__main__':
-    updated_items = {}
+def parse_item(items: dict, auction: dict) -> None:
+    # Decode NBT Data
+    nbt_object = decode_nbt(auction)
+    tag = nbt_object['']['i'][0]['tag']
+    extra_attributes = tag['ExtraAttributes']
 
-    for item in LIMITED:
-        print(f'Loading {item}...')
-        response = rq.get(f'https://sky.coflnet.com/api/item/price/{item}/history/full')
-        data = response.json()
-        if len(data) == 0:
-            continue
+    # Item ID Handling
+    item_id = str(extra_attributes.get('id'))
+    if item_id == "PET":
+        pet_info = json.loads(nbt_object['']['i'][0]['tag']['ExtraAttributes']['petInfo'])
+        item_id = f'{pet_info["tier"]}_{pet_info["type"]}'
+    elif item_id == "RUNE":
+        runes = nbt_object['']['i'][0]['tag']['ExtraAttributes']['runes']
+        runeKey, runeValue = next(iter(runes.items()))
+        item_id = f"{runeKey}_{int(runeValue)}"
+    current = items.get(item_id)
 
-        updated_items[item] = response.json()[-1]['avg']
+    # Item Cost Handling
+    item_bin = auction['starting_bid']
+    item = {'lbin': item_bin if current is None else min(item_bin, current.get('lbin'))}
 
-    print(json.dumps(updated_items, indent=4))
+    # Pet Level Handling
+    if extra_attributes.get('petInfo') is not None:
+        item['levels'] = {} if current is None else current.get('levels', {})
+        pet_level = tag['display']['Name'].split(' ')[1][0:-1]
+        item['levels'][pet_level] = min(item_bin, item['levels'].get(pet_level, item_bin))
+
+    # Attributes Handling
+    attributes = extra_attributes.get('attributes')
+    if attributes is not None:
+        item['attributes'] = {} if current is None else current.get('attributes', {})
+        attribute_keys = sorted(attributes.keys())
+        check_combo = True
+
+        # Get lbin single attribute
+        for attribute in attribute_keys:
+            tier = attributes[attribute]
+            if tier > 5:
+                check_combo = False
+            attribute_cost = item_bin / (2 ** (tier - 1))
+            if attribute_cost <= item['attributes'].get(attribute, attribute_cost):
+                item['attributes'][attribute] = attribute_cost
+
+            # Set Kuudra Armor Attributes
+            update_kuudra_piece(items, item_id, attribute, attribute_cost)
+
+        # Get lbin attribute combination
+        item_combos = {} if current is None else current.get('attribute_combos', {})
+        if check_combo and len(attribute_keys) > 1:
+            attribute_combo = ' '.join(attribute_keys)
+            item_combos[attribute_combo] = min(item_bin, item_combos.get(attribute_combo, item_bin))
+        if item_combos:
+            item['attribute_combos'] = item_combos
+
+    # Set Item
+    items[item_id] = item
+
+
+def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> None:
+    """
+    Parses Kuudra item into specific piece data to add to API.
+
+    :param items: Auction items object to be sent to API.
+    :param item_id: Name of item.
+    :param attribute: Name of attribute.
+    :param attribute_cost: Total value of attribute.
+    """
+    KUUDRA_PIECES = {'FERVOR', 'AURORA', 'TERROR', 'CRIMSON', 'HOLLOW', 'MOLTEN'}
+    item_ids = item_id.split('_')
+
+    if item_ids[0] in KUUDRA_PIECES:
+        armor_piece = items.setdefault(item_ids[1], {'attributes': {}})
+
+        # set individual attribute price
+        attributes = armor_piece['attributes']
+        attributes[attribute] = min(attributes.get(attribute, attribute_cost), attribute_cost)
