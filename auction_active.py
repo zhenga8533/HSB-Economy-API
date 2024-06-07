@@ -2,7 +2,7 @@ import json
 import os
 import pickle
 import requests as rq
-from util.items import parse_item
+from util.items import parse_active
 
 
 def get_active_auction(items: dict, page: int, log: bool=False) -> None:
@@ -27,7 +27,7 @@ def get_active_auction(items: dict, page: int, log: bool=False) -> None:
         print(f"Auction Looping ({page + 1}/{data['totalPages']})", end='\r')
     for auction in data['auctions']:
         if auction['bin']:
-            parse_item(items, auction)
+            parse_active(items, auction)
     if page + 1 < data['totalPages']:
         get_active_auction(items, page + 1, log)
     elif log:
@@ -54,7 +54,7 @@ def save_items(items: dict, log: bool=False) -> None:
 
     if log:
         # Save items as JSON
-        with open('data/auction/active.json', 'w') as file:
+        with open('data/json/active.json', 'w') as file:
             json.dump(items, file, indent=4)
 
 
