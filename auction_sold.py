@@ -24,7 +24,7 @@ def get_items() -> dict:
         return {}
 
     # Load auction data
-    with open(f'data/sold/auction', 'rb') as file:
+    with open(f'data/auction/sold', 'rb') as file:
         return pickle.load(file)
 
 
@@ -39,7 +39,9 @@ def parse_items(items: dict) -> None:
 
     INCREMENT = 2_500
 
-    for item in items:
+    for key in items:
+        item = items[key]
+
         # parse pricing
         if item.get('lbin', 0) != 0:
             item['lbin'] += INCREMENT
@@ -176,12 +178,13 @@ def send_items(items: dict) -> None:
     :return: None
     """
 
-    load_dotenv()
     KEY = os.getenv('KEY')
     send_data(os.getenv('AUCTION_URL'), {'items': items}, KEY)
 
 
 if __name__ == "__main__":
+    load_dotenv()
+    LOG = os.getenv('LOG') == 'True'
     ah = get_items()
 
     # Fetch data
@@ -190,7 +193,8 @@ if __name__ == "__main__":
     merge_current(ah)
 
     # Save and send data
-    save_items(ah, True)
+    save_items(ah, LOG)
     clean_items(ah)
-    print(ah)
+    if LOG:
+        print(ah)
     # send_items(ah)
