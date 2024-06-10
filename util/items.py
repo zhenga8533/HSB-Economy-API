@@ -22,7 +22,7 @@ def decode_nbt(auction: dict) -> dict:
     return Compound.parse(io.BytesIO(decompressed_data))
 
 
-def parse_active(items: dict, auction: dict) -> None:
+def parse_item(items: dict, auction: dict, sold: bool=False) -> None:
     def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float, sold: bool) -> None:
         """
         Parses Kuudra item into specific piece data to add to API.
@@ -49,6 +49,9 @@ def parse_active(items: dict, auction: dict) -> None:
                 attributes[attribute]['timestamp'] = datetime.now().timestamp()
 
 
+    WEEK_SECONDS = 604_800
+    now = datetime.now().timestamp()
+
     # Decode NBT Data
     nbt_object = decode_nbt(auction)
     tag = nbt_object['']['i'][0]['tag']
@@ -67,7 +70,15 @@ def parse_active(items: dict, auction: dict) -> None:
 
     # Item Cost Handling
     item_bin = auction['starting_bid']
+    current_lbin = float('inf') if current is None else current.get('lbin')
     item = {'lbin': item_bin if current is None else min(item_bin, current.get('lbin'))}
+    
+    if sold:
+        timestamp = auction['timestamp'] / 1000 if current is None or is_within_percentage(item_bin, current_lbin, 5) \
+            or item_bin < current_lbin else current.get('timestamp')
+        item['timestamp'] = timestamp
+        if timestamp + WEEK_SECONDS > now:
+            item = {'lbin': item_bin, 'timestamp': now}
 
     # Pet Level Handling
     if extra_attributes.get('petInfo') is not None:
