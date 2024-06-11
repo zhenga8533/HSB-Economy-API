@@ -1,6 +1,21 @@
 import requests as rq
 
 
+def check_replace(current: dict, item_bin: float, now: int) -> bool:
+    """
+    Check if the current item should be replaced with the new item.
+
+    :param: current - The current item data.
+    :param: item_bin - The new item's bin price.
+    :param: now - The current timestamp.
+    :return: True if the item should be replaced, False otherwise.
+    """
+
+    return current is None or \
+        item_bin < current.get('lbin') or \
+        current.get('timestamp', 0) + 604_800 < now or \
+        is_within_percentage(item_bin, current.get('lbin'), 5)
+
 def send_data(url: str, data: dict, key: str) -> dict:
     """
     Send data to the API via POST request.

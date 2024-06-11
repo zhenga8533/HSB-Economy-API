@@ -5,7 +5,7 @@ import io
 import json
 from datetime import datetime
 from nbtlib import Compound
-from util.functions import is_within_percentage
+from util.functions import check_replace
 
 
 def decode_nbt(auction: dict) -> dict:
@@ -71,18 +71,24 @@ def parse_item(items: dict, auction: dict) -> None:
     # Item Cost Handling
     item_bin = auction.get('price', auction.get('starting_bid', 0))
     lbin = float('inf') if current is None else current.get('lbin')
-    too_old = current.get('timestamp', 0) + WEEK_SECONDS < now
-    replace = item_bin < lbin or is_within_percentage(item_bin, lbin, 5) or too_old
-    item = {
-            'lbin': item_bin if replace else lbin,
-            'timestamp': now if replace else current.get('timestamp')
-        }
+    item_base = {'lbin': item_bin, 'timestamp': now}
+
+    if check_replace(current, item_bin, now) or item_bin < lbin:
+        item = item_base
+    else:
+        item = {'lbin': lbin, 'timestamp': current.get('timestamp')}
 
     # Pet Level Handling
     if extra_attributes.get('petInfo') is not None:
         item['levels'] = {} if current is None else current.get('levels', {})
         pet_level = tag['display']['Name'].split(' ')[1][0:-1]
-        item['levels'][pet_level] = min(item_bin, item['levels'].get(pet_level, item_bin))
+        current_level = item['levels'].get(pet_level, item_base)
+
+        if check_replace(current_level, item_bin, now):
+            item['levels'][pet_level] = {
+                'lbin': item_bin,
+                'timestamp': now
+            }
 
     # Attributes Handling
     attributes = extra_attributes.get('attributes')
