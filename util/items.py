@@ -22,8 +22,8 @@ def decode_nbt(auction: dict) -> dict:
     return Compound.parse(io.BytesIO(decompressed_data))
 
 
-def parse_item(items: dict, auction: dict, sold: bool=False) -> None:
-    def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float, sold: bool) -> None:
+def parse_item(items: dict, auction: dict) -> None:
+    def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> None:
         """
         Parses Kuudra item into specific piece data to add to API.
 
@@ -69,16 +69,14 @@ def parse_item(items: dict, auction: dict, sold: bool=False) -> None:
     current = items.get(item_id)
 
     # Item Cost Handling
-    item_bin = auction['starting_bid']
-    current_lbin = float('inf') if current is None else current.get('lbin')
-    item = {'lbin': item_bin if current is None else min(item_bin, current.get('lbin'))}
-    
-    if sold:
-        timestamp = auction['timestamp'] / 1000 if current is None or is_within_percentage(item_bin, current_lbin, 5) \
-            or item_bin < current_lbin else current.get('timestamp')
-        item['timestamp'] = timestamp
-        if timestamp + WEEK_SECONDS > now:
-            item = {'lbin': item_bin, 'timestamp': now}
+    item_bin = auction.get('price', auction.get('starting_bid', 0))
+    lbin = float('inf') if current is None else current.get('lbin')
+    too_old = current.get('timestamp', 0) + WEEK_SECONDS < now
+    replace = item_bin < lbin or is_within_percentage(item_bin, lbin, 5) or too_old
+    item = {
+            'lbin': item_bin if replace else lbin,
+            'timestamp': now if replace else current.get('timestamp')
+        }
 
     # Pet Level Handling
     if extra_attributes.get('petInfo') is not None:
@@ -117,7 +115,7 @@ def parse_item(items: dict, auction: dict, sold: bool=False) -> None:
     items[item_id] = item
 
 
-def parse_sold(items: dict, auction: dict) -> None:
+def parse_auction(items: dict, auction: dict) -> None:
     def update_kuudra_piece(items: dict, item_id: str, attribute: str, attribute_cost: float) -> bool:
         """
         Parses Kuudra item into specific piece data to add to API.
@@ -164,10 +162,10 @@ def parse_sold(items: dict, auction: dict) -> None:
     current = items.get(item_id)
 
     # Item Cost Handling
-    item_bin = auction['price']
-    current_lbin = float('inf') if current is None else current.get('lbin')
-    timestamp = auction['timestamp'] / 1000 if current is None or is_within_percentage(item_bin, current_lbin, 5) \
-        or item_bin < current_lbin else current.get('timestamp')
+    item_bin = auction.get('price', auction.get('starting_bid', 0))
+    lbin = float('inf') if current is None else current.get('lbin')
+    timestamp = auction.get('timestamp', datetime.now().timestamp()) / 1000 if current is None or is_within_percentage(item_bin, lbin, 5) \
+        or item_bin < lbin else current.get('timestamp')
     item = {'lbin': item_bin if current is None else min(item_bin, current.get('lbin')),
             'timestamp': timestamp}
     if timestamp + WEEK_SECONDS > now:
