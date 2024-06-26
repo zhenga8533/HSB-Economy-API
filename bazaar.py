@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 from util.functions import send_data
 
-BAZAAR_URL = 'https://api.hypixel.net/v2/skyblock/bazaar'
+BAZAAR_URL = "https://api.hypixel.net/v2/skyblock/bazaar"
 
 
 def get_bazaar(items: dict) -> None:
@@ -21,12 +21,12 @@ def get_bazaar(items: dict) -> None:
         return
 
     data = response.json()
-    products = data['products']
+    products = data["products"]
     for product in products:
         item = products[product]
-        quick_status = item['quick_status']
+        quick_status = item["quick_status"]
 
-        items[product] = [quick_status['sellPrice'], quick_status['buyPrice']]
+        items[product] = [quick_status["sellPrice"], quick_status["buyPrice"]]
     # print('Bazaar Process Complete!')
 
 
@@ -39,15 +39,15 @@ def send_items(items: dict) -> None:
     """
 
     load_dotenv()
-    KEY = os.getenv('KEY')
-    send_data(os.getenv('AUCTION_URL'), {'items': items}, KEY)
+    KEY = os.getenv("KEY")
+    send_data(os.getenv("AUCTION_URL"), {"items": items}, KEY)
 
 
 if __name__ == "__main__":
     load_dotenv()
-    KEY = os.getenv('KEY')
+    KEY = os.getenv("KEY")
     bazaar = {}
     get_bazaar(bazaar)
 
     # Send to API
-    send_data(os.getenv('BAZAAR_URL'), {'items': bazaar}, KEY)
+    send_data(os.getenv("BAZAAR_URL"), {"items": bazaar}, KEY)
