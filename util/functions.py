@@ -11,10 +11,13 @@ def check_replace(current: dict, item_bin: float, now: int) -> bool:
     :return: True if the item should be replaced, False otherwise.
     """
 
-    return current is None or \
-        item_bin < current.get('lbin') or \
-        current.get('timestamp', 0) + 604_800 < now or \
-        is_within_percentage(item_bin, current.get('lbin'), 5)
+    return (
+        current is None
+        or item_bin < current.get("lbin")
+        or current.get("timestamp", 0) + 604_800 < now
+        or within_percent(item_bin, current.get("lbin"), 5)
+    )
+
 
 def send_data(url: str, data: dict, key: str) -> dict:
     """
@@ -26,7 +29,7 @@ def send_data(url: str, data: dict, key: str) -> dict:
     :return: API response
     """
 
-    response = rq.post(url, json=data, params={'key': key})
+    response = rq.post(url, json=data, params={"key": key})
     return response.json()
 
 
@@ -50,7 +53,7 @@ def average_objects(og: dict, avg: dict, count: int) -> None:
             og[key] = round(og[key] + (avg[key] - og[key]) / count)
 
 
-def is_within_percentage(number1: float, number2: float, percentage: float) -> bool:
+def within_percent(number1: float, number2: float, percentage: float) -> bool:
     """
     Check if number1 is within a certain percentage of number2.
 
