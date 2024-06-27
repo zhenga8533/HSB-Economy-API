@@ -28,7 +28,7 @@ def get_items() -> dict:
         return pickle.load(file)
 
 
-def parse_items(items: dict) -> None:
+def parse_items(items: dict, increment: int) -> None:
     """
     Parses and updates the provided 'items' dictionary, removing entries with outdated timestamps,
     incrementing 'lbin' values, and applying similar updates to attribute and attribute_combos dictionaries.
@@ -37,14 +37,12 @@ def parse_items(items: dict) -> None:
     :return: None
     """
 
-    INCREMENT = 2_500
-
     for key in items:
         item = items[key]
 
         # parse pricing
         if item.get("lbin", 0) != 0:
-            item["lbin"] += INCREMENT
+            item["lbin"] += increment
 
         # Parse attribute pricing
         if "attributes" in item:
@@ -160,10 +158,11 @@ def send_items(items: dict) -> None:
 if __name__ == "__main__":
     load_dotenv()
     LOG = os.getenv("LOG") == "True"
+    INCREMENT = int(os.getenv("INCREMENT"))
     ah = get_items()
 
     # Fetch data
-    parse_items(ah)
+    parse_items(ah, INCREMENT)
     get_sold_auction(ah)
     merge_current(ah)
 
