@@ -46,9 +46,9 @@ def parse_items(items: dict, increment: int) -> None:
 
         # Parse attribute pricing
         if "attributes" in item:
-            parse_items(item["attributes"])
+            parse_items(item["attributes"], increment)
         if "attribute_combos" in item:
-            parse_items(item["attribute_combos"])
+            parse_items(item["attribute_combos"], increment)
 
 
 def get_sold_auction(items: dict) -> None:
@@ -89,13 +89,23 @@ def merge_current(items: dict) -> None:
             currPrice = items[key].get("lbin", 0) if key in items else 0
             binPrice = active[key].get("lbin", 0)
 
-            if key in items and currPrice * 2 >= binPrice > currPrice and timestamp + 604_800 < now:
+            if key in items and currPrice * 3 >= binPrice > currPrice and timestamp + 604_800 > now:
                 continue
 
             items[key] = active[key]
             items[key]["timestamp"] = now
 
-        # TBD: Add limited items
+    with open(f"data/auction/limited", "rb") as file:
+        limited = pickle.load(file)
+
+        for key in limited:
+            timestamp = items[key].get("timestamp", now) if key in items else now
+
+            if key in items and timestamp + 604_800 > now:
+                continue
+
+            items[key] = limited[key]
+            items[key]["timestamp"] = now
 
 
 def save_items(items: dict, log: bool = False) -> None:
