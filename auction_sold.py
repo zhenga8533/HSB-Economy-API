@@ -89,7 +89,7 @@ def merge_current(items: dict) -> None:
             currPrice = items[key].get("lbin", 0) if key in items else 0
             binPrice = active[key].get("lbin", 0)
 
-            if key in items and currPrice * 5 >= binPrice > currPrice and timestamp + 604_800 < now:
+            if key in items and currPrice * 2 >= binPrice > currPrice and timestamp + 604_800 < now:
                 continue
 
             items[key] = active[key]
@@ -140,7 +140,7 @@ def clean_items(items: dict, low=0) -> None:
         if "attributes" in item:
             clean_items(item["attributes"])
         if "attribute_combos" in item:
-            clean_items(item["attribute_combos"], low=10_000_000)
+            clean_items(item["attribute_combos"], low=25_000_000)
 
 
 def send_items(items: dict) -> None:
