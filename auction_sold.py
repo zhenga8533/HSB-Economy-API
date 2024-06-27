@@ -5,7 +5,7 @@ import requests as rq
 from datetime import datetime
 from dotenv import load_dotenv
 from util.functions import send_data
-from util.items import parse_sold
+from util.items import parse_item
 
 
 def get_items() -> dict:
@@ -16,15 +16,15 @@ def get_items() -> dict:
     """
 
     # Check for data directory and files
-    if not os.path.exists('data/auction'):
-        os.makedirs('data/auction')
+    if not os.path.exists("data/auction"):
+        os.makedirs("data/auction")
 
     # Check for auction file
-    if not os.path.isfile('data/auction/sold'):
+    if not os.path.isfile("data/auction/sold"):
         return {}
 
     # Load auction data
-    with open(f'data/auction/sold', 'rb') as file:
+    with open(f"data/auction/sold", "rb") as file:
         return pickle.load(file)
 
 
@@ -43,14 +43,14 @@ def parse_items(items: dict) -> None:
         item = items[key]
 
         # parse pricing
-        if item.get('lbin', 0) != 0:
-            item['lbin'] += INCREMENT
+        if item.get("lbin", 0) != 0:
+            item["lbin"] += INCREMENT
 
         # Parse attribute pricing
-        if 'attributes' in item:
-            parse_items(item['attributes'])
-        if 'attribute_combos' in item:
-            parse_items(item['attribute_combos'])
+        if "attributes" in item:
+            parse_items(item["attributes"])
+        if "attribute_combos" in item:
+            parse_items(item["attribute_combos"])
 
 
 def get_sold_auction(items: dict) -> None:
@@ -62,7 +62,7 @@ def get_sold_auction(items: dict) -> None:
     """
 
     # Get auction data
-    response = rq.get('https://api.hypixel.net/v2/skyblock/auctions_ended')
+    response = rq.get("https://api.hypixel.net/v2/skyblock/auctions_ended")
     if response.status_code != 200:
         print(f"Failed to get data. Status code: {response.status_code}")
         return
@@ -70,62 +70,37 @@ def get_sold_auction(items: dict) -> None:
     # Parse auction data
     data = response.json()
     for auction in data["auctions"]:
-        parse_sold(items, auction)
+        parse_item(items, auction)
 
 
 def merge_current(items: dict) -> None:
     """
     Merges sold auction data with current auction data to override old.
-    
+
     :param: items - Sold auction items data.
     :return: None
     """
 
-
-    def timestamp_obj(obj: dict, var: str) -> None:
-        """
-        Timestamps the entries in the specified dictionary under the given variable.
-
-        :param: obj - A dictionary to be processed, where keys are identifiers and values are dictionaries.
-        :param: var - The variable within the dictionary to be timestamped.
-        :return: None
-        """
-
-        if var in obj:
-            keys = obj[var]
-            new_keys = {}
-            for key in keys:
-                new_keys[key] = {
-                    'lbin': keys[key],
-                    'timestamp': now
-                }
-            obj[var] = new_keys
-
-
     now = datetime.now().timestamp()
 
-    with open(f'data/auction/active', 'rb') as file:
+    with open(f"data/auction/active", "rb") as file:
         active = pickle.load(file)
 
         for key in active:
-            timestamp = items[key].get('timestamp', now) if key in items else now
-            currPrice = items[key].get('lbin', 0) if key in items else 0
-            binPrice = active[key].get('lbin', 0)
+            timestamp = items[key].get("timestamp", now) if key in items else now
+            currPrice = items[key].get("lbin", 0) if key in items else 0
+            binPrice = active[key].get("lbin", 0)
 
             if key in items and currPrice * 5 >= binPrice > currPrice and timestamp + 604_800 < now:
                 continue
 
             items[key] = active[key]
-            items[key]['timestamp'] = now
+            items[key]["timestamp"] = now
 
-            # Set timestamp of attributes
-            timestamp_obj(items[key], 'attributes')
-            timestamp_obj(items[key], 'attribute_combos')
-        
         # TBD: Add limited items
 
 
-def save_items(items: dict, log: bool=False) -> None:
+def save_items(items: dict, log: bool = False) -> None:
     """
     Saves the provided item data to the specified file.
 
@@ -133,11 +108,11 @@ def save_items(items: dict, log: bool=False) -> None:
     :return: None
     """
 
-    with open(f'data/auction/sold', 'wb') as file:
+    with open(f"data/auction/sold", "wb") as file:
         pickle.dump(items, file)
-    
+
     if log:
-        with open('data/json/sold.json', 'w') as file:
+        with open("data/json/sold.json", "w") as file:
             json.dump(items, file, indent=4)
 
 
@@ -156,18 +131,18 @@ def clean_items(items: dict, low=0) -> None:
         item = items[key]
 
         # Remove timestamp
-        if 'timestamp' in item:
-            del item['timestamp']
-        
+        if "timestamp" in item:
+            del item["timestamp"]
+
         # Remove low items
-        if items[key].get('lbin', 0) < low:
+        if items[key].get("lbin", 0) < low:
             del items[key]
 
         # Clean attributes
-        if 'attributes' in item:
-            clean_items(item['attributes'])
-        if 'attribute_combos' in item:
-            clean_items(item['attribute_combos'], low=10_000_000)
+        if "attributes" in item:
+            clean_items(item["attributes"])
+        if "attribute_combos" in item:
+            clean_items(item["attribute_combos"], low=10_000_000)
 
 
 def send_items(items: dict) -> None:
@@ -178,13 +153,13 @@ def send_items(items: dict) -> None:
     :return: None
     """
 
-    KEY = os.getenv('KEY')
-    send_data(os.getenv('AUCTION_URL'), {'items': items}, KEY)
+    KEY = os.getenv("KEY")
+    send_data(os.getenv("AUCTION_URL"), {"items": items}, KEY)
 
 
 if __name__ == "__main__":
     load_dotenv()
-    LOG = os.getenv('LOG') == 'True'
+    LOG = os.getenv("LOG") == "True"
     ah = get_items()
 
     # Fetch data
