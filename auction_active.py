@@ -2,6 +2,7 @@ import json
 import os
 import pickle
 import requests as rq
+from dotenv import load_dotenv
 from util.items import parse_item
 
 
@@ -61,9 +62,10 @@ def save_items(items: dict, log: bool = False) -> None:
 
 
 if __name__ == "__main__":
+    load_dotenv()
+    LOG = os.getenv("LOG") == "True"
     ah = {}
-    log = True
 
     # Get data to send
-    get_active_auction(ah, 0, log)
-    save_items(ah, log)
+    get_active_auction(ah, 0, LOG)
+    save_items(ah, LOG)
