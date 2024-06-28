@@ -1,9 +1,9 @@
 import requests as rq
 import json
 import os
-import pickle
 from datetime import datetime
 from dotenv import load_dotenv
+from util.functions import *
 
 
 LIMITED = [
@@ -216,33 +216,21 @@ LIMITED = [
 ]
 
 
-def save_items(items: dict, log: bool = False) -> None:
+def get_items() -> dict:
     """
-    Saves the provided item data to the specified file.
+    Get the limited items from the API.
 
-    :param: items - A dictionary containing information about items, where keys are item IDs.
-    :return: None
+    :return: A dictionary containing the limited items.
     """
-
-    with open(f"data/auction/limited", "wb") as file:
-        pickle.dump(items, file)
-
-    if log:
-        with open("data/json/limited.json", "w") as file:
-            json.dump(items, file, indent=4)
-
-
-if __name__ == "__main__":
-    load_dotenv()
-    LOG = os.getenv("LOG") == "True"
-    now = datetime.now().timestamp()
 
     items = {}
+    now = datetime.now().timestamp()
 
     for item in LIMITED:
-        if LOG:
-            print(f"Loading {item}...")
-        response = rq.get(f"https://sky.coflnet.com/api/item/price/{item}/history/full")
+        try:
+            response = rq.get(f"https://sky.coflnet.com/api/item/price/{item}/history/full")
+        except rq.exceptions.RequestException:
+            continue
 
         try:
             data = response.json()
@@ -252,4 +240,12 @@ if __name__ == "__main__":
         except json.JSONDecodeError:
             continue
 
-    save_items(items, log=LOG)
+    return items
+
+
+if __name__ == "__main__":
+    load_dotenv()
+    LOG = os.getenv("LOG") == "True"
+
+    items = get_items()
+    save_data(data=items, name="limited", log=LOG)
