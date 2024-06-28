@@ -18,8 +18,60 @@ def check_replace(current: dict, item_bin: float, now: int) -> bool:
         current is None
         or item_bin < current.get("lbin")
         or current.get("timestamp", 0) + 604_800 < now
-        or within_percent(item_bin, current.get("lbin"), 5)
+        or within_percent(number1=item_bin, number2=current.get("lbin"), percentage=5)
     )
+
+
+def clean_data(data: dict, low=0) -> None:
+    """
+    Cleans the provided 'items' dictionary by removing 'timestamp' entries and cleaning attribute dictionaries.
+
+    :param: data - A dictionary containing information about items, where keys are item IDs.
+    :param: low - Lowest cost item can be otherwise it is deleted.
+    :return: None
+    """
+
+    keys = list(data.keys())
+
+    for key in keys:
+        item = data[key]
+
+        # Remove timestamp
+        if "timestamp" in item:
+            del item["timestamp"]
+
+        # Remove low items
+        if data[key].get("lbin", 0) < low:
+            del data[key]
+
+        # Clean attributes
+        if "attributes" in item:
+            clean_data(data=item["attributes"])
+        if "attribute_combos" in item:
+            clean_data(data=item["attribute_combos"], low=25_000_000)
+
+
+def increment_data(data: dict, increment: int) -> None:
+    """
+    Parses and updates the provided 'data' dictionary, removing entries with outdated timestamps,
+    incrementing 'lbin' values, and applying similar updates to attribute and attribute_combos dictionaries.
+
+    :param: data - A dictionary containing information about data, where keys are item IDs.
+    :return: None
+    """
+
+    for key in data:
+        item = data[key]
+
+        # parse pricing
+        if item.get("lbin", 0) != 0:
+            item["lbin"] += increment
+
+        # Parse attribute pricing
+        if "attributes" in item:
+            increment_data(data=item["attributes"], increment=increment)
+        if "attribute_combos" in item:
+            increment_data(data=item["attribute_combos"], increment=increment)
 
 
 def save_data(data: dict, name: str, log: bool) -> None:

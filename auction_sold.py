@@ -1,10 +1,9 @@
-import json
 import os
 import pickle
 import requests as rq
 from datetime import datetime
 from dotenv import load_dotenv
-from util.functions import send_data
+from util.functions import *
 from util.items import parse_item
 
 
@@ -15,40 +14,14 @@ def get_items() -> dict:
     :return: A dictionary containing information about items, where keys are item IDs.
     """
 
-    # Check for data directory and files
-    if not os.path.exists("data/auction"):
-        os.makedirs("data/auction")
-
     # Check for auction file
-    if not os.path.isfile("data/auction/sold"):
+    os.makedirs("data/pickle", exist_ok=True)
+    if not os.path.isfile("data/pickle/sold"):
         return {}
 
     # Load auction data
-    with open(f"data/auction/sold", "rb") as file:
+    with open(f"data/pickle/sold", "rb") as file:
         return pickle.load(file)
-
-
-def parse_items(items: dict, increment: int) -> None:
-    """
-    Parses and updates the provided 'items' dictionary, removing entries with outdated timestamps,
-    incrementing 'lbin' values, and applying similar updates to attribute and attribute_combos dictionaries.
-
-    :param: items - A dictionary containing information about items, where keys are item IDs.
-    :return: None
-    """
-
-    for key in items:
-        item = items[key]
-
-        # parse pricing
-        if item.get("lbin", 0) != 0:
-            item["lbin"] += increment
-
-        # Parse attribute pricing
-        if "attributes" in item:
-            parse_items(item["attributes"], increment)
-        if "attribute_combos" in item:
-            parse_items(item["attribute_combos"], increment)
 
 
 def get_sold_auction(items: dict) -> None:
@@ -71,7 +44,7 @@ def get_sold_auction(items: dict) -> None:
         parse_item(items, auction)
 
 
-def merge_current(items: dict) -> None:
+def merge_auctions(items: dict) -> None:
     """
     Merges sold auction data with current auction data to override old.
 
@@ -81,7 +54,7 @@ def merge_current(items: dict) -> None:
 
     now = datetime.now().timestamp()
 
-    with open(f"data/auction/active", "rb") as file:
+    with open(f"data/pickle/active", "rb") as file:
         active = pickle.load(file)
 
         for key in active:
@@ -95,7 +68,7 @@ def merge_current(items: dict) -> None:
             items[key] = active[key]
             items[key]["timestamp"] = now
 
-    with open(f"data/auction/limited", "rb") as file:
+    with open(f"data/pickle/limited", "rb") as file:
         limited = pickle.load(file)
 
         for key in limited:
@@ -108,77 +81,21 @@ def merge_current(items: dict) -> None:
             items[key]["timestamp"] = now
 
 
-def save_items(items: dict, log: bool = False) -> None:
-    """
-    Saves the provided item data to the specified file.
-
-    :param: items - A dictionary containing information about items, where keys are item IDs.
-    :return: None
-    """
-
-    with open(f"data/auction/sold", "wb") as file:
-        pickle.dump(items, file)
-
-    if log:
-        with open("data/json/sold.json", "w") as file:
-            json.dump(items, file, indent=4)
-
-
-def clean_items(items: dict, low=0) -> None:
-    """
-    Cleans the provided 'items' dictionary by removing 'timestamp' entries and cleaning attribute dictionaries.
-
-    :param: items - A dictionary containing information about items, where keys are item IDs.
-    :param: low - Lowest cost item can be otherwise it is deleted.
-    :return: None
-    """
-
-    keys = list(items.keys())
-
-    for key in keys:
-        item = items[key]
-
-        # Remove timestamp
-        if "timestamp" in item:
-            del item["timestamp"]
-
-        # Remove low items
-        if items[key].get("lbin", 0) < low:
-            del items[key]
-
-        # Clean attributes
-        if "attributes" in item:
-            clean_items(item["attributes"])
-        if "attribute_combos" in item:
-            clean_items(item["attribute_combos"], low=25_000_000)
-
-
-def send_items(items: dict) -> None:
-    """
-    Sends the provided 'items' data using an API call.
-
-    :param: items - A dictionary containing lbin information about items.
-    :return: None
-    """
-
-    KEY = os.getenv("KEY")
-    send_data(os.getenv("AUCTION_URL"), {"items": items}, KEY)
-
-
 if __name__ == "__main__":
+    # Load environment variables
     load_dotenv()
-    LOG = os.getenv("LOG") == "True"
     INCREMENT = int(os.getenv("INCREMENT"))
-    ah = get_items()
+    KEY = os.getenv("KEY")
+    LOG = os.getenv("LOG") == "True"
+    URL = os.getenv("AUCTION_URL")
 
     # Fetch data
-    parse_items(ah, INCREMENT)
-    get_sold_auction(ah)
-    merge_current(ah)
+    ah = get_items()
+    increment_data(data=ah, increment=INCREMENT)
+    get_sold_auction(items=ah)
+    merge_auctions(items=ah)
 
     # Save and send data
-    save_items(ah, LOG)
-    clean_items(ah)
-    if LOG:
-        print(ah)
-    send_items(ah)
+    save_data(data=ah, name="sold", log=LOG)
+    clean_data(ah)
+    send_data(url=URL, data=ah, key=KEY)
