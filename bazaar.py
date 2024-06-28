@@ -36,6 +36,6 @@ if __name__ == "__main__":
 
     # Fetch and send data
     bazaar = {}
-    get_bazaar(bazaar)
-    save_data(bazaar, "bazaar", LOG)
+    get_bazaar(items=bazaar)
+    save_data(data=bazaar, name="bazaar", log=LOG)
     send_data(url=URL, data={"items": bazaar}, key=KEY)
