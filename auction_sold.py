@@ -98,4 +98,4 @@ if __name__ == "__main__":
     # Save and send data
     save_data(data=ah, name="sold", log=LOG)
     clean_data(ah)
-    send_data(url=URL, data=ah, key=KEY)
+    send_data(url=URL, data={"items": ah}, key=KEY)
