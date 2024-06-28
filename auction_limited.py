@@ -216,10 +216,11 @@ LIMITED = [
 ]
 
 
-def get_items() -> dict:
+def get_items(log: bool) -> dict:
     """
     Get the limited items from the API.
 
+    :param: log - Whether to log the data.
     :return: A dictionary containing the limited items.
     """
 
@@ -227,9 +228,14 @@ def get_items() -> dict:
     now = datetime.now().timestamp()
 
     for item in LIMITED:
+        if log:
+            print(f"Fetching data for {item}...")
+
         try:
             response = rq.get(f"https://sky.coflnet.com/api/item/price/{item}/history/full")
         except rq.exceptions.RequestException:
+            if log:
+                print(f"Failed to fetch data for {item}.")
             continue
 
         try:
@@ -238,6 +244,8 @@ def get_items() -> dict:
                 continue
             items[item] = {"lbin": response.json()[-1]["avg"], "timestamp": now}
         except json.JSONDecodeError:
+            if log:
+                print(f"Failed to decode JSON for {item}.")
             continue
 
     return items
@@ -247,5 +255,5 @@ if __name__ == "__main__":
     load_dotenv()
     LOG = os.getenv("LOG") == "True"
 
-    items = get_items()
+    items = get_items(log=LOG)
     save_data(data=items, name="limited", log=LOG)
