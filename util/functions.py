@@ -1,3 +1,6 @@
+import json
+import os
+import pickle
 import requests as rq
 
 
@@ -19,6 +22,30 @@ def check_replace(current: dict, item_bin: float, now: int) -> bool:
     )
 
 
+def save_data(data: dict, name: str, log: bool) -> None:
+    """
+    Save data to a file.
+
+    :param: data - Data to be saved.
+    :param: name - Name of the file to save the data to.
+    :param: log - Whether to log the data.
+    :return: None
+    """
+
+    # Make sure all directories exist
+    os.makedirs("data/pickle", exist_ok=True)
+    os.makedirs("data/json", exist_ok=True)
+
+    # Save the data
+    with open(f"data/pickle/{name}", "wb") as file:
+        pickle.dump(data, file)
+
+    # Log the data
+    if log:
+        with open(f"data/json/{name}.json", "w") as file:
+            json.dump(data, file, indent=4)
+
+
 def send_data(url: str, data: dict, key: str) -> dict:
     """
     Send data to the API via POST request.
@@ -31,26 +58,6 @@ def send_data(url: str, data: dict, key: str) -> dict:
 
     response = rq.post(url, json=data, params={"key": key})
     return response.json()
-
-
-def average_objects(og: dict, avg: dict, count: int) -> None:
-    """
-    Recursively computes the average of values in nested dictionaries.
-
-    :param: og - The original dictionary to be averaged.
-    :param: avg - The dictionary containing values to be averaged with the original.
-    :param: count - The count of elements used for averaging.
-    :return: None
-    """
-    for key, value in avg.items():
-        if key not in og:
-            og[key] = value
-            continue
-
-        if isinstance(og[key], dict):
-            average_objects(og[key], avg[key], count)
-        else:  # Bias average on current hour
-            og[key] = round(og[key] + (avg[key] - og[key]) / count)
 
 
 def within_percent(number1: float, number2: float, percentage: float) -> bool:

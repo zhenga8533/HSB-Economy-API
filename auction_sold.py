@@ -181,4 +181,4 @@ if __name__ == "__main__":
     clean_items(ah)
     if LOG:
         print(ah)
-    # send_items(ah)
+    send_items(ah)
