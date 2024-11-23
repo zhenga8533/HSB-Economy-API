@@ -1,10 +1,17 @@
 import os
 import pickle
 import requests as rq
+import sys
 from datetime import datetime
 from dotenv import load_dotenv
 from util.functions import *
 from util.items import parse_item
+
+
+DATA_DIR = "data/pickle"
+SOLD_FILE = f"{DATA_DIR}/sold"
+ACTIVE_FILE = f"{DATA_DIR}/active"
+LIMITED_FILE = f"{DATA_DIR}/limited"
 
 
 def get_items() -> dict:
@@ -32,53 +39,38 @@ def get_sold_auction(items: dict) -> None:
     :return: None
     """
 
-    # Get auction data
-    response = rq.get("https://api.hypixel.net/v2/skyblock/auctions_ended")
-    if response.status_code != 200:
-        print(f"Failed to get data. Status code: {response.status_code}")
-        return
+    try:
+        response = rq.get("https://api.hypixel.net/v2/skyblock/auctions_ended", stream=True)
+        response.raise_for_status()
+        data = response.json()
 
-    # Parse auction data
-    data = response.json()
-    for auction in data["auctions"]:
-        parse_item(items, auction)
+        for auction in data["auctions"]:
+            parse_item(items, auction)
+    except rq.RequestException as e:
+        print(f"Error fetching sold auctions: {e}")
 
 
 def merge_auctions(items: dict) -> None:
-    """
-    Merges sold auction data with current auction data to override old.
-
-    :param: items - Sold auction items data.
-    :return: None
-    """
-
     now = datetime.now().timestamp()
 
-    with open(f"data/pickle/active", "rb") as file:
-        active = pickle.load(file)
+    def merge_source(source_file):
+        try:
+            with open(source_file, "rb") as file:
+                source = pickle.load(file)
+                for key, value in source.items():
+                    existing = items.get(key, {})
+                    timestamp = existing.get("timestamp", now)
 
-        for key in active:
-            timestamp = items[key].get("timestamp", now) if key in items else now
-            currPrice = items[key].get("lbin", 0) if key in items else 0
-            binPrice = active[key].get("lbin", 0)
+                    if timestamp + 604_800 > now and key in items:
+                        continue
 
-            if key in items and currPrice * 3 >= binPrice > currPrice and timestamp + 604_800 > now:
-                continue
+                    items[key] = value
+                    items[key]["timestamp"] = now
+        except (FileNotFoundError, pickle.UnpicklingError) as e:
+            print(f"Error merging data from {source_file}: {e}")
 
-            items[key] = active[key]
-            items[key]["timestamp"] = now
-
-    with open(f"data/pickle/limited", "rb") as file:
-        limited = pickle.load(file)
-
-        for key in limited:
-            timestamp = items[key].get("timestamp", now) if key in items else now
-
-            if key in items and timestamp + 604_800 > now:
-                continue
-
-            items[key] = limited[key]
-            items[key]["timestamp"] = now
+    merge_source(ACTIVE_FILE)
+    merge_source(LIMITED_FILE)
 
 
 if __name__ == "__main__":
