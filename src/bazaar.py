@@ -1,5 +1,4 @@
 import logging
-import requests as rq
 import os
 from dotenv import load_dotenv
 from util.functions import *
@@ -14,29 +13,18 @@ def get_bazaar(logger: logging.Logger) -> dict:
     :return: A dictionary containing the latest Bazaar data.
     """
 
+    # Fetch the Bazaar data
     if logger:
         logger.info("Fetching Bazaar data...")
-    bazaar = {}
-    response = rq.get("https://api.hypixel.net/v2/skyblock/bazaar")
-    if logger:
-        logger.info(f"Fetched Bazaar data. Status code: {response.status_code}")
+    data = fetch_data("https://api.hypixel.net/v2/skyblock/bazaar", 3, 5, logger)
 
-    if response.status_code != 200:
-        if logger:
-            logger.error(f"Failed to fetch Bazaar data. Status code: {response.status_code}")
-        exit(1)
-
-    data = response.json()
+    # Loop through the products and store the data
     products = data["products"]
+    bazaar = {}
+
     for product in products:
         item = products[product]
         quick_status = item["quick_status"]
-
-        if logger:
-            logger.info(
-                f"Item: {product}, Buy Price: {quick_status['buyPrice']}, Sell Price: {quick_status['sellPrice']}"
-            )
-
         bazaar[product] = [quick_status["sellPrice"], quick_status["buyPrice"]]
 
     return bazaar
@@ -52,5 +40,4 @@ if __name__ == "__main__":
 
     # Fetch and send data
     bazaar = get_bazaar(logger=logger)
-    save_data(data=bazaar, name="bazaar", logger=logger)
     send_data(url=URL, data={"items": bazaar}, key=KEY, logger=logger)

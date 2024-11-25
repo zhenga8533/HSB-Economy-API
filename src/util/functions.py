@@ -5,29 +5,63 @@ import pickle
 import requests as rq
 
 
-def save_data(data: dict, name: str, logger: logging.Logger) -> dict:
+def fetch_data(url: str, attempts: int, timeout: int, logger: logging.Logger) -> dict:
     """
-    Save data to a file.
+    Fetch data from the API via GET request.
 
-    :param: data - Data to be saved.
-    :param: name - Name of the file to save the data to.
+    :param: url - URL to GET from
+    :param: attempts - Number of attempts to make
+    :param: timeout - Timeout for the request
+    :param: logger - Logger to log the response
+    :return: API response
+    """
+
+    for attempt in range(attempts):
+        try:
+            logger.info(f"Fetching data from {url}...")
+            response = rq.get(url, timeout=timeout)
+
+            if response.status_code != 200:
+                if logger:
+                    logger.error(f"Failed to fetch data. Status code: {response.status_code}")
+                continue
+            elif logger:
+                logger.info(f"Fetched data from {url}. Status code: {response.status_code}")
+
+            # Parse the data and cache it if needed
+            data = response.json()
+            if logger:
+                cache_data(data, "bazaar", logger)
+            return data
+        except rq.exceptions.Timeout:
+            if logger:
+                logger.error(f"Attempt {attempt + 1} timed out while fetching data from {url}.")
+        except rq.exceptions.RequestException as e:
+            if logger:
+                logger.error(f"Attempt {attempt + 1} failed to fetch data from {url}.")
+
+    logger.error(f"Failed to fetch data from {url} after {attempts} attempts.")
+    exit(1)
+
+
+def cache_data(data: dict, name: str, logger: logging.Logger) -> None:
+    """
+    Cache data to a file.
+
+    :param: data - Data to be cached.
+    :param: name - Name of the file to cache the data to.
     :param: logger - Logger to log the data.
     :return: None
     """
 
     # Make sure all directories exist
-    os.makedirs("data/pickle", exist_ok=True)
-    os.makedirs("data/json", exist_ok=True)
+    os.makedirs("cache", exist_ok=True)
 
-    # Save the data
-    with open(f"data/pickle/{name}", "wb") as file:
-        pickle.dump(data, file)
-
-    # Log the data
-    if logger:
-        logger.info(f"Data saved to data/pickle/{name}.json")
-        with open(f"data/json/{name}.json", "w") as file:
-            json.dump(data, file, indent=4)
+    # Cache the data
+    logger.info(f"Caching data to cache/{name}.json...")
+    with open(f"cache/{name}.json", "w") as file:
+        json.dump(data, file, indent=4)
+    logger.info(f"Data cached to cache/{name}.json.")
 
 
 def send_data(url: str, data: dict, key: str, logger: logging.Logger) -> dict:
@@ -44,4 +78,7 @@ def send_data(url: str, data: dict, key: str, logger: logging.Logger) -> dict:
     if logger:
         logger.info(f"Sending data to {url}...")
     response = rq.post(url, json=data, params={"key": key})
+    if logger:
+        logger.info(f"Data sent to {url}. Status code: {response.status_code}")
+
     return response.json()
