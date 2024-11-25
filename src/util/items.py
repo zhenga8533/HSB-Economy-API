@@ -45,3 +45,22 @@ def update_lbin(auction: dict, item: dict) -> None:
 
     if price < auction[item_id]["lbin"]:
         auction[item_id] = {"lbin": price, "timestamp": now}
+
+
+def increment_lbin(auction: dict, increment: int) -> None:
+    """
+    Increment the lowest BIN price of all items by a given value.
+
+    :param: auction - Auction data containing all item information
+    :param: increment - Value to increment the BIN price by
+    :return: None
+    """
+
+    now = datetime.now().timestamp()
+
+    for item in auction:
+        # Delete item if it is older than 1 week
+        if now - auction[item]["timestamp"] > 604_800:
+            del auction[item]
+        else:
+            auction[item]["lbin"] += increment

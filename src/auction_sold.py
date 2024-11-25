@@ -5,16 +5,14 @@ from util.items import *
 from util.logger import setup_logger
 
 
-def get_sold_auction(logger: logging.Logger) -> None:
+def get_sold_auction(auction: dict, logger: logging.Logger) -> None:
     """
     Get the latest sold auction data and store it in the provided 'items' dictionary.
 
+    :param auction: The auction data to update.
     :param logger: The logger to use.
     :return: None
     """
-
-    # Fetch last parsed auction
-    auction = get_data("auction.json", logger) or {}
 
     # Fetch the Auction data
     data = fetch_data("https://api.hypixel.net/v2/skyblock/auctions_ended", "auction_sold", logger, True)
@@ -25,7 +23,6 @@ def get_sold_auction(logger: logging.Logger) -> None:
 
     # Save and return the auction data
     save_data(auction, "auction.json", logger)
-    return auction
 
 
 if __name__ == "__main__":
@@ -38,8 +35,9 @@ if __name__ == "__main__":
     logger = setup_logger("auction_sold", "logs/auction_sold.log") if LOG else None
 
     # Fetch data
-    auction = get_sold_auction(logger=logger)
-    print(auction)
+    auction = get_data("auction.json", logger) or {}
+    increment_lbin(auction=auction, increment=INCREMENT)
+    get_sold_auction(auction=auction, logger=logger)
 
     # Save and send data
     # send_data(url=URL, data={"items": ah}, key=KEY)
