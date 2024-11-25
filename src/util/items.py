@@ -1,7 +1,7 @@
 import base64
-import datetime
 import gzip
 import io
+from datetime import datetime
 from nbtlib import Compound
 from util.functions import *
 
