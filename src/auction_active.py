@@ -1,7 +1,6 @@
 import os
 import requests as rq
 from dotenv import load_dotenv
-from util.items import parse_item
 from util.functions import *
 
 
@@ -14,6 +13,7 @@ def get_active_auction(items: dict, log: bool = False) -> None:
     :param: log - Whether to log the process
     :return: None
     """
+
     page = 0
     while True:
         response = rq.get("https://api.hypixel.net/v2/skyblock/auctions", params={"page": page})
