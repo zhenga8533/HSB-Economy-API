@@ -14,8 +14,6 @@ def get_bazaar(logger: logging.Logger) -> dict:
     """
 
     # Fetch the Bazaar data
-    if logger:
-        logger.info("Fetching Bazaar data...")
     data = fetch_data("https://api.hypixel.net/v2/skyblock/bazaar", logger)
 
     # Loop through the products and store the data

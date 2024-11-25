@@ -1,6 +1,7 @@
 import os
 from dotenv import load_dotenv
 from util.functions import *
+from util.items import *
 from util.logger import setup_logger
 
 
@@ -13,16 +14,12 @@ def get_sold_auction(logger: logging.Logger) -> None:
     """
 
     # Fetch the Auction data
-    if logger:
-        logger.info("Fetching Auction data...")
     data = fetch_data("https://api.hypixel.net/v2/skyblock/auctions_ended", logger)
 
-    # Loop through the products and store the data
     auctions = data["auctions"]
     auction = {}
-
     for item in auctions:
-        continue
+        update_lbin(auction=auction, item=item)
 
     return auction
 
@@ -38,6 +35,7 @@ if __name__ == "__main__":
 
     # Fetch data
     auction = get_sold_auction(logger=logger)
+    print(auction)
 
     # Save and send data
     # send_data(url=URL, data={"items": ah}, key=KEY)
