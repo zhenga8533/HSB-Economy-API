@@ -1,9 +1,8 @@
-import requests as rq
-import json
 import os
 from datetime import datetime
 from dotenv import load_dotenv
 from util.functions import *
+from util.logger import setup_logger
 
 
 LIMITED = [
@@ -216,44 +215,37 @@ LIMITED = [
 ]
 
 
-def get_items(log: bool) -> dict:
+def get_auction_limited(logger: logging.Logger = None) -> dict:
     """
-    Get the limited items from the API.
+    Fetch limited auction data and process items lbin data.
 
-    :param: log - Whether to log the data.
+    :param logger: The logger to use.
     :return: A dictionary containing the limited items.
     """
 
-    items = {}
+    # Fetch last parsed auction
+    auction = get_data("auction.json", logger) or {}
     now = datetime.now().timestamp()
 
     for item in LIMITED:
-        if log:
-            print(f"Fetching data for {item}...")
+        data = fetch_data(
+            f"https://sky.coflnet.com/api/item/price/{item}/history/full", "auction_active", logger, False
+        )
 
-        try:
-            response = rq.get(f"https://sky.coflnet.com/api/item/price/{item}/history/full")
-        except rq.exceptions.RequestException:
-            if log:
-                print(f"Failed to fetch data for {item}.")
+        if len(data) == 0:
             continue
+        auction[item] = {"lbin": data[-1]["avg"], "timestamp": now}
 
-        try:
-            data = response.json()
-            if len(data) == 0:
-                continue
-            items[item] = {"lbin": response.json()[-1]["avg"], "timestamp": now}
-        except json.JSONDecodeError:
-            if log:
-                print(f"Failed to decode JSON for {item}.")
-            continue
-
-    return items
+    # Save and return the auction data
+    save_data(auction, "auction.json", logger)
+    return auction
 
 
 if __name__ == "__main__":
+    # Load environment variables
     load_dotenv()
     LOG = os.getenv("LOG") == "True"
+    logger = setup_logger("auction_limited", "logs/auction_limited.log") if LOG else None
 
-    items = get_items(log=LOG)
-    save_data(data=items, name="limited", log=LOG)
+    # Fetch data
+    get_auction_limited(logger=logger)

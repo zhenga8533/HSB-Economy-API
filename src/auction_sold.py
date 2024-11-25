@@ -35,7 +35,7 @@ if __name__ == "__main__":
     KEY = os.getenv("KEY")
     LOG = os.getenv("LOG") == "True"
     URL = os.getenv("AUCTION_URL")
-    logger = setup_logger("auction", "logs/auction_sold.log") if LOG else None
+    logger = setup_logger("auction_sold", "logs/auction_sold.log") if LOG else None
 
     # Fetch data
     auction = get_sold_auction(logger=logger)

@@ -1,5 +1,4 @@
 import os
-import requests as rq
 from dotenv import load_dotenv
 from util.functions import *
 from util.items import *
@@ -10,10 +9,8 @@ def get_active_auction(logger: logging.Logger = None) -> dict:
     """
     Fetch auction data and process items lbin data.
 
-    :param: items - Item data object
-    :param: page - Page number of the auction data
-    :param: log - Whether to log the process
-    :return: None
+    :param logger: The logger to use.
+    :return: A dictionary containing the auction data.
     """
 
     # Fetch last parsed timestamp
@@ -63,11 +60,7 @@ if __name__ == "__main__":
     KEY = os.getenv("KEY")
     LOG = os.getenv("LOG") == "True"
     URL = os.getenv("AUCTION_URL")
-    logger = setup_logger("auction", "logs/auction_active.log") if LOG else None
+    logger = setup_logger("auction_active", "logs/auction_active.log") if LOG else None
 
     # Fetch data
-    auction = get_active_auction(logger=logger)
-    print(auction)
-
-    # Save and send data
-    # send_data(url=URL, data={"items": ah}, key=KEY)
+    get_active_auction(logger=logger)

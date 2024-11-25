@@ -1,4 +1,5 @@
 import base64
+import datetime
 import gzip
 import io
 from nbtlib import Compound
@@ -30,6 +31,7 @@ def update_lbin(auction: dict, item: dict) -> None:
     if not item["bin"]:
         return
 
+    now = datetime.now().timestamp()
     price = item.get("price", item.get("starting_bid"))
     nbt = decode_nbt(item["item_bytes"])
 
@@ -38,8 +40,8 @@ def update_lbin(auction: dict, item: dict) -> None:
     item_id = str(extra_attributes.get("id"))
 
     if item_id not in auction:
-        auction[item_id] = {"lbin": price}
+        auction[item_id] = {"lbin": price, "timestamp": now}
         return
 
     if price < auction[item_id]["lbin"]:
-        auction[item_id]["lbin"] = price
+        auction[item_id] = {"lbin": price, "timestamp": now}
