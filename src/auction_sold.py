@@ -13,14 +13,18 @@ def get_sold_auction(logger: logging.Logger) -> None:
     :return: None
     """
 
+    # Fetch last parsed auction
+    auction = get_data("auction.json", logger) or {}
+
     # Fetch the Auction data
-    data = fetch_data("https://api.hypixel.net/v2/skyblock/auctions_ended", logger)
+    data = fetch_data("https://api.hypixel.net/v2/skyblock/auctions_ended", "auction_sold", logger, True)
 
     auctions = data["auctions"]
-    auction = {}
     for item in auctions:
         update_lbin(auction=auction, item=item)
 
+    # Save and return the auction data
+    save_data(auction, "auction.json", logger)
     return auction
 
 
@@ -31,7 +35,7 @@ if __name__ == "__main__":
     KEY = os.getenv("KEY")
     LOG = os.getenv("LOG") == "True"
     URL = os.getenv("AUCTION_URL")
-    logger = setup_logger("auction", "logs/auction.log") if LOG else None
+    logger = setup_logger("auction", "logs/auction_sold.log") if LOG else None
 
     # Fetch data
     auction = get_sold_auction(logger=logger)
