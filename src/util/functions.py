@@ -1,25 +1,26 @@
 import json
 import logging
 import os
-import pickle
 import requests as rq
+from dotenv import load_dotenv
 
 
-def fetch_data(url: str, attempts: int, timeout: int, logger: logging.Logger) -> dict:
+def fetch_data(url: str, logger: logging.Logger) -> dict:
     """
     Fetch data from the API via GET request.
 
     :param: url - URL to GET from
-    :param: attempts - Number of attempts to make
-    :param: timeout - Timeout for the request
     :param: logger - Logger to log the response
     :return: API response
     """
+    load_dotenv()
+    RETRIES = int(os.getenv("RETRIES"))
+    TIMEOUT = int(os.getenv("TIMEOUT"))
 
-    for attempt in range(attempts):
+    for attempt in range(RETRIES):
         try:
             logger.info(f"Fetching data from {url}...")
-            response = rq.get(url, timeout=timeout)
+            response = rq.get(url, timeout=TIMEOUT)
 
             if response.status_code != 200:
                 if logger:
@@ -40,7 +41,7 @@ def fetch_data(url: str, attempts: int, timeout: int, logger: logging.Logger) ->
             if logger:
                 logger.error(f"Attempt {attempt + 1} failed to fetch data from {url}.")
 
-    logger.error(f"Failed to fetch data from {url} after {attempts} attempts.")
+    logger.error(f"Failed to fetch data from {url} after {RETRIES} attempts.")
     exit(1)
 
 

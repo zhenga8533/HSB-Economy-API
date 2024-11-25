@@ -1,76 +1,30 @@
 import os
-import pickle
-import requests as rq
-import sys
-from datetime import datetime
 from dotenv import load_dotenv
 from util.functions import *
-from util.items import parse_item
+from util.logger import setup_logger
 
 
-DATA_DIR = "data/pickle"
-SOLD_FILE = f"{DATA_DIR}/sold"
-ACTIVE_FILE = f"{DATA_DIR}/active"
-LIMITED_FILE = f"{DATA_DIR}/limited"
-
-
-def get_items() -> dict:
+def get_sold_auction(logger: logging.Logger) -> None:
     """
-    Retrieves item data from the stored file or returns an empty dictionary if no data is available.
+    Get the latest sold auction data and store it in the provided 'items' dictionary.
 
-    :return: A dictionary containing information about items, where keys are item IDs.
-    """
-
-    # Check for auction file
-    os.makedirs("data/pickle", exist_ok=True)
-    if not os.path.isfile("data/pickle/sold"):
-        return {}
-
-    # Load auction data
-    with open(f"data/pickle/sold", "rb") as file:
-        return pickle.load(file)
-
-
-def get_sold_auction(items: dict) -> None:
-    """
-    Fetches auction data and processes items lbin data.
-
-    :param: items - A dictionary containing information about items, where keys are item IDs.
+    :param logger: The logger to use.
     :return: None
     """
 
-    try:
-        response = rq.get("https://api.hypixel.net/v2/skyblock/auctions_ended", stream=True)
-        response.raise_for_status()
-        data = response.json()
+    # Fetch the Auction data
+    if logger:
+        logger.info("Fetching Auction data...")
+    data = fetch_data("https://api.hypixel.net/v2/skyblock/auctions_ended", logger)
 
-        for auction in data["auctions"]:
-            parse_item(items, auction)
-    except rq.RequestException as e:
-        print(f"Error fetching sold auctions: {e}")
+    # Loop through the products and store the data
+    auctions = data["auctions"]
+    auction = {}
 
+    for item in auctions:
+        continue
 
-def merge_auctions(items: dict) -> None:
-    now = datetime.now().timestamp()
-
-    def merge_source(source_file):
-        try:
-            with open(source_file, "rb") as file:
-                source = pickle.load(file)
-                for key, value in source.items():
-                    existing = items.get(key, {})
-                    timestamp = existing.get("timestamp", now)
-
-                    if timestamp + 604_800 > now and key in items:
-                        continue
-
-                    items[key] = value
-                    items[key]["timestamp"] = now
-        except (FileNotFoundError, pickle.UnpicklingError) as e:
-            print(f"Error merging data from {source_file}: {e}")
-
-    merge_source(ACTIVE_FILE)
-    merge_source(LIMITED_FILE)
+    return auction
 
 
 if __name__ == "__main__":
@@ -80,14 +34,10 @@ if __name__ == "__main__":
     KEY = os.getenv("KEY")
     LOG = os.getenv("LOG") == "True"
     URL = os.getenv("AUCTION_URL")
+    logger = setup_logger("auction", "logs/auction.log") if LOG else None
 
     # Fetch data
-    ah = get_items()
-    increment_data(data=ah, increment=INCREMENT)
-    get_sold_auction(items=ah)
-    merge_auctions(items=ah)
+    auction = get_sold_auction(logger=logger)
 
     # Save and send data
-    save_data(data=ah, name="sold", log=LOG)
-    clean_data(ah)
-    send_data(url=URL, data={"items": ah}, key=KEY)
+    # send_data(url=URL, data={"items": ah}, key=KEY)
