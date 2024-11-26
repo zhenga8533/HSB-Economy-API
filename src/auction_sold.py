@@ -40,4 +40,4 @@ if __name__ == "__main__":
     get_sold_auction(auction=auction, logger=logger)
 
     # Save and send data
-    # send_data(url=URL, data={"items": ah}, key=KEY)
+    send_data(url=URL, data={"items": auction}, key=KEY, logger=logger)
