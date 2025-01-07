@@ -149,8 +149,12 @@ def increment_lbin(auction: dict, increment: int) -> None:
             if key != "levels" and key != "attributes" and key != "attribute_combos":
                 continue
             value = item[key]
+            delete = []
             for v in value:
                 if now - value[v]["timestamp"] > 604_800:
-                    del value[v]
+                    delete.append(v)
                 else:
                     value[v]["lbin"] += increment
+
+            for d in delete:
+                del value[d]
